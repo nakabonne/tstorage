@@ -28,13 +28,13 @@ var (
 	// is CPU bound, so there is no sense in running more than GOMAXPROCS concurrent
 	// goroutines on data ingestion path.
 	defaultWorkersLimit = cgroup.AvailableCPUs()
-	writeTimeout        = 30 * time.Second
 
 	partitionDirRegex = regexp.MustCompile(`^p-.+`)
 )
 
 const (
 	defaultPartitionDuration = 1 * time.Hour
+	defaultWriteTimeout      = 30 * time.Second
 )
 
 // Storage provides goroutine safe capabilities of insertion into and retrieval from partitions.
@@ -71,6 +71,12 @@ func WithPartitionDuration(duration time.Duration) Option {
 	}
 }
 
+func WithWriteTimeout(timeout time.Duration) Option {
+	return func(s *storage) {
+		s.writeTimeout = timeout
+	}
+}
+
 // NewStorage gives back a new storage along with the initial partition.
 // Give the WithDataPath option for running as a on-disk storage.
 func NewStorage(opts ...Option) (Storage, error) {
@@ -83,6 +89,9 @@ func NewStorage(opts ...Option) (Storage, error) {
 	}
 	if s.partitionDuration <= 0 {
 		s.partitionDuration = defaultPartitionDuration
+	}
+	if s.partitionDuration <= 0 {
+		s.writeTimeout = defaultWriteTimeout
 	}
 
 	if s.inMemoryMode() {
@@ -136,6 +145,7 @@ type storage struct {
 	wal               wal.WAL
 	partitionDuration time.Duration
 	dataPath          string
+	writeTimeout      time.Duration
 
 	workersLimitCh chan struct{}
 	// wg must be incremented to guarantee all writes are done gracefully.
@@ -151,13 +161,13 @@ func (s *storage) InsertRows(rows []partition.Row) error {
 	select {
 	case s.workersLimitCh <- struct{}{}:
 	default:
-		t := timerpool.Get(writeTimeout)
+		t := timerpool.Get(s.writeTimeout)
 		select {
 		case s.workersLimitCh <- struct{}{}:
 			timerpool.Put(t)
 		case <-t.C:
 			return fmt.Errorf("failed to write a data point in %s, since it is overloaded with %d concurrent writers",
-				writeTimeout, defaultWorkersLimit)
+				s.writeTimeout, defaultWorkersLimit)
 		}
 
 	}
