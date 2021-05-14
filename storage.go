@@ -1,4 +1,4 @@
-package storage
+package tstorage
 
 import (
 	"fmt"
@@ -42,6 +42,7 @@ type Storage interface {
 	Reader
 	Writer
 	// FlushRows persists all in-memory partitions ready to persisted.
+	// TODO: Maybe it should be done within this package
 	FlushRows() error
 }
 
