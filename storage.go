@@ -14,12 +14,13 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/nakabonne/tsdbe/cgroup"
 	"github.com/nakabonne/tsdbe/partition"
 	"github.com/nakabonne/tsdbe/partition/disk"
 	"github.com/nakabonne/tsdbe/partition/memory"
-	"github.com/nakabonne/tsdbe/wal"
-	"github.com/nakabonne/tsdbe/cgroup"
 	"github.com/nakabonne/tsdbe/timerpool"
+	"github.com/nakabonne/tsdbe/wal"
+	"github.com/nakabonne/tsdbe/wal/file"
 )
 
 var (
@@ -30,6 +31,10 @@ var (
 	writeTimeout        = 30 * time.Second
 
 	partitionDirRegex = regexp.MustCompile(`^p-.+`)
+)
+
+const (
+	defaultPartitionDuration = 1 * time.Hour
 )
 
 // Storage provides goroutine safe capabilities of insertion into and retrieval from partitions.
@@ -52,33 +57,49 @@ type Writer interface {
 	Wait()
 }
 
-// NewStorage gives back a new storage along with the initial partition.
-func NewStorage(wal wal.WAL, partitionDuration time.Duration, dataPath string) (Storage, error) {
-	if partitionDuration <= 0 {
-		return nil, fmt.Errorf("invalid partitionDuration given: %v", partitionDuration)
+type Option func(*storage)
+
+func WithDataPath(dataPath string) Option {
+	return func(s *storage) {
+		s.dataPath = dataPath
 	}
+}
+
+func WithPartitionDuration(duration time.Duration) Option {
+	return func(s *storage) {
+		s.partitionDuration = duration
+	}
+}
+
+// NewStorage gives back a new storage along with the initial partition.
+// Give the WithDataPath option for running as a on-disk storage.
+func NewStorage(opts ...Option) (Storage, error) {
 	s := &storage{
 		partitionList:  partition.NewPartitionList(),
 		workersLimitCh: make(chan struct{}, defaultWorkersLimit),
-		wal:            wal,
-		partitionTTL:   partitionDuration,
-		dataPath:       dataPath,
+	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	if s.partitionDuration <= 0 {
+		s.partitionDuration = defaultPartitionDuration
 	}
 
 	if s.inMemoryMode() {
-		s.partitionList.Insert(memory.NewMemoryPartition(wal, partitionDuration))
+		s.partitionList.Insert(memory.NewMemoryPartition(nil, s.partitionDuration))
 		return s, nil
 	}
 
-	if err := os.MkdirAll(dataPath, fs.ModePerm); err != nil {
-		return nil, fmt.Errorf("failed to make data directory %s: %w", dataPath, err)
+	s.wal = file.NewFileWAL(filepath.Join(s.dataPath, "wal"))
+	if err := os.MkdirAll(s.dataPath, fs.ModePerm); err != nil {
+		return nil, fmt.Errorf("failed to make data directory %s: %w", s.dataPath, err)
 	}
-	files, err := ioutil.ReadDir(dataPath)
+	files, err := ioutil.ReadDir(s.dataPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open data directory: %w", err)
 	}
 	if len(files) == 0 {
-		s.partitionList.Insert(memory.NewMemoryPartition(wal, partitionDuration))
+		s.partitionList.Insert(memory.NewMemoryPartition(s.wal, s.partitionDuration))
 		return s, nil
 	}
 
@@ -91,7 +112,7 @@ func NewStorage(wal wal.WAL, partitionDuration time.Duration, dataPath string) (
 		if !isPartitionDir(f) {
 			continue
 		}
-		path := filepath.Join(dataPath, f.Name())
+		path := filepath.Join(s.dataPath, f.Name())
 		part, err := disk.OpenDiskPartition(path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open disk partition for %s: %w", path, err)
@@ -104,7 +125,7 @@ func NewStorage(wal wal.WAL, partitionDuration time.Duration, dataPath string) (
 	for _, p := range partitions {
 		s.partitionList.Insert(p)
 	}
-	s.partitionList.Insert(memory.NewMemoryPartition(wal, partitionDuration))
+	s.partitionList.Insert(memory.NewMemoryPartition(s.wal, s.partitionDuration))
 
 	return s, nil
 }
@@ -112,9 +133,9 @@ func NewStorage(wal wal.WAL, partitionDuration time.Duration, dataPath string) (
 type storage struct {
 	partitionList partition.PartitionList
 
-	wal          wal.WAL
-	partitionTTL time.Duration
-	dataPath     string
+	wal               wal.WAL
+	partitionDuration time.Duration
+	dataPath          string
 
 	workersLimitCh chan struct{}
 	// wg must be incremented to guarantee all writes are done gracefully.
@@ -157,7 +178,7 @@ func (s *storage) getPartition() partition.Partition {
 
 	// All partitions seems to be unavailable so add a new partition to the list.
 
-	p := memory.NewMemoryPartition(s.wal, s.partitionTTL)
+	p := memory.NewMemoryPartition(s.wal, s.partitionDuration)
 	s.partitionList.Insert(p)
 	return p
 }
