@@ -3,7 +3,7 @@ package memory
 import (
 	"sync"
 
-	"github.com/nakabonne/tsdbe/partition"
+	"github.com/nakabonne/tstorage/partition"
 )
 
 // metric has a list of data points that belong to the metric

@@ -1,6 +1,6 @@
 package wal
 
-import "github.com/nakabonne/tsdbe/partition"
+import "github.com/nakabonne/tstorage/partition"
 
 type Operation byte
 

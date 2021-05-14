@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/nakabonne/tsdbe/partition"
+	"github.com/nakabonne/tstorage/partition"
 )
 
 func TestOpenDiskPartition(t *testing.T) {

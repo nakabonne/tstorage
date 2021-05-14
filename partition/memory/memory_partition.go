@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/nakabonne/tsdbe/partition"
-	"github.com/nakabonne/tsdbe/wal"
+	"github.com/nakabonne/tstorage/partition"
+	"github.com/nakabonne/tstorage/wal"
 )
 
 var _ partition.MemoryPartition = &memoryPartition{}

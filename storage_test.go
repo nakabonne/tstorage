@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/nakabonne/tsdbe/partition"
-	"github.com/nakabonne/tsdbe/partition/memory"
+	"github.com/nakabonne/tstorage/partition"
+	"github.com/nakabonne/tstorage/partition/memory"
 )
 
 func Test_storage_SelectRows(t *testing.T) {

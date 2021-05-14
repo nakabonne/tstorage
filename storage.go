@@ -14,13 +14,13 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/nakabonne/tsdbe/internal/cgroup"
-	"github.com/nakabonne/tsdbe/internal/timerpool"
-	"github.com/nakabonne/tsdbe/partition"
-	"github.com/nakabonne/tsdbe/partition/disk"
-	"github.com/nakabonne/tsdbe/partition/memory"
-	"github.com/nakabonne/tsdbe/wal"
-	"github.com/nakabonne/tsdbe/wal/file"
+	"github.com/nakabonne/tstorage/internal/cgroup"
+	"github.com/nakabonne/tstorage/internal/timerpool"
+	"github.com/nakabonne/tstorage/partition"
+	"github.com/nakabonne/tstorage/partition/disk"
+	"github.com/nakabonne/tstorage/partition/memory"
+	"github.com/nakabonne/tstorage/wal"
+	"github.com/nakabonne/tstorage/wal/file"
 )
 
 var (

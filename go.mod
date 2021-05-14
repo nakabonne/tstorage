@@ -1,4 +1,4 @@
-module github.com/nakabonne/tsdbe
+module github.com/nakabonne/tstorage
 
 go 1.16
 

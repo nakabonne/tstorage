@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/nakabonne/tsdbe/wal"
+	"github.com/nakabonne/tstorage/wal"
 )
 
 type fileWAL struct {

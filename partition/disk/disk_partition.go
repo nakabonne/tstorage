@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/nakabonne/tsdbe/partition"
+	"github.com/nakabonne/tstorage/partition"
 )
 
 // See NewDiskPartition for details.

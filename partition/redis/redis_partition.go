@@ -1,6 +1,6 @@
 package redis
 
-import "github.com/nakabonne/tsdbe/partition"
+import "github.com/nakabonne/tstorage/partition"
 
 var _ partition.MemoryPartition = &redisPartition{}
 
