@@ -14,11 +14,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/nakabonne/tsdbe/cgroup"
+	"github.com/nakabonne/tsdbe/internal/cgroup"
+	"github.com/nakabonne/tsdbe/internal/timerpool"
 	"github.com/nakabonne/tsdbe/partition"
 	"github.com/nakabonne/tsdbe/partition/disk"
 	"github.com/nakabonne/tsdbe/partition/memory"
-	"github.com/nakabonne/tsdbe/timerpool"
 	"github.com/nakabonne/tsdbe/wal"
 	"github.com/nakabonne/tsdbe/wal/file"
 )
