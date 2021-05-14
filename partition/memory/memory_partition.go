@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/nakabonne/fiatdb/app/fiatd/storage/partition"
-	"github.com/nakabonne/fiatdb/app/fiatd/wal"
+	"github.com/nakabonne/tsdbe/partition"
+	"github.com/nakabonne/tsdbe/wal"
 )
 
 var _ partition.MemoryPartition = &memoryPartition{}

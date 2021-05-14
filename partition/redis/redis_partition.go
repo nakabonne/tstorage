@@ -1,6 +1,6 @@
 package redis
 
-import "github.com/nakabonne/fiatdb/app/fiatd/storage/partition"
+import "github.com/nakabonne/tsdbe/partition"
 
 var _ partition.MemoryPartition = &redisPartition{}
 

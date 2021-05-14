@@ -3,7 +3,7 @@ package memory
 import (
 	"sync"
 
-	"github.com/nakabonne/fiatdb/app/fiatd/storage/partition"
+	"github.com/nakabonne/tsdbe/partition"
 )
 
 // metric has a list of data points that belong to the metric

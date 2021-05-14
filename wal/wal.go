@@ -1,6 +1,6 @@
 package wal
 
-import "github.com/nakabonne/fiatdb/app/fiatd/storage/partition"
+import "github.com/nakabonne/tsdbe/partition"
 
 type Operation byte
 

@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/nakabonne/fiatdb/app/fiatd/wal"
+	"github.com/nakabonne/tsdbe/wal"
 )
 
 type fileWAL struct {

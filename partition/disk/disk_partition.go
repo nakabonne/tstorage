@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/nakabonne/fiatdb/app/fiatd/storage/partition"
+	"github.com/nakabonne/tsdbe/partition"
 )
 
 // See NewDiskPartition for details.
