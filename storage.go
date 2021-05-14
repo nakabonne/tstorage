@@ -202,7 +202,7 @@ func (s *storage) SelectRows(metricName string, start, end int64) []partition.Da
 	for iterator.Next() {
 		part, err := iterator.Value()
 		if err != nil {
-			// FIXME: Replace logger
+			// TODO: Replace logger
 			log.Printf("invalid partition found: %v\n", err)
 			continue
 		}

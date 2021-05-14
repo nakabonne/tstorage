@@ -1,3 +1,4 @@
+// FIXME: Move this package to the root
 package partition
 
 // Partition is a chunk of time-series data with the timestamp range.
