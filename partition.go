@@ -37,8 +37,8 @@ type MemoryPartition interface {
 }
 
 type Row struct {
-	MetricName string
 	DataPoint
+	Labels []Label
 }
 
 type DataPoint struct {

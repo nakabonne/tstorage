@@ -4,7 +4,7 @@ import (
 	"io"
 	"sync"
 
-	// TODO: Remove logger
+	// FIXME: Remove logger
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 
 	"github.com/nakabonne/tstorage/internal/filestream"

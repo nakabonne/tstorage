@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -43,7 +42,8 @@ type Storage interface {
 
 // Reader provides reading access to time series data.
 type Reader interface {
-	SelectRows(metricName string, start, end int64) []DataPoint
+	// FIXME: Consider changing the return value to an iterator
+	SelectRows(metricName string, start, end int64) ([]DataPoint, error)
 }
 
 // Writer provides writing access to time series data.
@@ -197,7 +197,7 @@ func (s *storage) getPartition() Partition {
 	return p
 }
 
-func (s *storage) SelectRows(metricName string, start, end int64) []DataPoint {
+func (s *storage) SelectRows(metricName string, start, end int64) ([]DataPoint, error) {
 	res := make([]DataPoint, 0)
 
 	// Iterate over all partitions from the newest one.
@@ -205,9 +205,7 @@ func (s *storage) SelectRows(metricName string, start, end int64) []DataPoint {
 	for iterator.Next() {
 		part, err := iterator.Value()
 		if err != nil {
-			// TODO: Replace logger
-			log.Printf("invalid partition found: %v\n", err)
-			continue
+			return nil, fmt.Errorf("invalid partition found: %w", err)
 		}
 		if part.MaxTimestamp() < start {
 			// No need to keep going anymore
@@ -220,7 +218,7 @@ func (s *storage) SelectRows(metricName string, start, end int64) []DataPoint {
 		// in order to keep the order in ascending.
 		res = append(points, res...)
 	}
-	return res
+	return res, nil
 }
 
 func (s *storage) FlushRows() error {
