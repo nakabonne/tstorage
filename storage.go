@@ -152,27 +152,35 @@ func (s *storage) InsertRows(rows []Row) error {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
+	insert := func() error {
+		defer func() { <-s.workersLimitCh }()
+		p := s.getPartition()
+		if err := p.InsertRows(rows); err != nil {
+			return fmt.Errorf("failed to insert rows: %w", err)
+		}
+		return nil
+	}
+
 	// Limit the number of concurrent goroutines to prevent from out of memory
 	// errors and CPU trashing even if too many goroutines attempt to write.
 	select {
 	case s.workersLimitCh <- struct{}{}:
+		return insert()
 	default:
-		t := timerpool.Get(s.writeTimeout)
-		select {
-		case s.workersLimitCh <- struct{}{}:
-			timerpool.Put(t)
-		case <-t.C:
-			return fmt.Errorf("failed to write a data point in %s, since it is overloaded with %d concurrent writers",
-				s.writeTimeout, defaultWorkersLimit)
-		}
+	}
 
+	// Seems like all workers are busy; wait for up to writeTimeout
+
+	t := timerpool.Get(s.writeTimeout)
+	select {
+	case s.workersLimitCh <- struct{}{}:
+		timerpool.Put(t)
+		return insert()
+	case <-t.C:
+		timerpool.Put(t)
+		return fmt.Errorf("failed to write a data point in %s, since it is overloaded with %d concurrent writers",
+			s.writeTimeout, defaultWorkersLimit)
 	}
-	p := s.getPartition()
-	if err := p.InsertRows(rows); err != nil {
-		return fmt.Errorf("failed to insert rows: %w", err)
-	}
-	<-s.workersLimitCh
-	return nil
 }
 
 // getPartition returns a writable partition. If none, it creates a new one.
