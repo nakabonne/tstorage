@@ -131,7 +131,7 @@ func TestSelectAll(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple data points for multiple metric",
+			name: "multiple data points for multiple metrics",
 			memoryPartition: func() memoryPartition {
 				m := memoryPartition{}
 				m.metrics.Store("metric1", &metric{
