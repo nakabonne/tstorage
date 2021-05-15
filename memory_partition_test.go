@@ -1,32 +1,30 @@
-package memory
+package tstorage
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/nakabonne/tstorage/partition"
 )
 
 func Test_metric_insertPoint(t *testing.T) {
 	tests := []struct {
 		name   string
 		metric metric
-		point  *partition.DataPoint
-		want   []partition.DataPoint
+		point  *DataPoint
+		want   []DataPoint
 	}{
 		{
 			name: "the first insertion",
 			metric: metric{
 				name:      "metric-a",
-				points:    []partition.DataPoint{},
+				points:    []DataPoint{},
 				lastIndex: -1,
 			},
-			point: &partition.DataPoint{
+			point: &DataPoint{
 				Timestamp: 1,
 				Value:     0,
 			},
-			want: []partition.DataPoint{
+			want: []DataPoint{
 				{
 					Timestamp: 1,
 					Value:     0,
@@ -37,7 +35,7 @@ func Test_metric_insertPoint(t *testing.T) {
 			name: "insert in the middle",
 			metric: metric{
 				name: "metric-a",
-				points: []partition.DataPoint{
+				points: []DataPoint{
 					{
 						Timestamp: 1,
 					},
@@ -47,10 +45,10 @@ func Test_metric_insertPoint(t *testing.T) {
 				},
 				lastIndex: 1,
 			},
-			point: &partition.DataPoint{
+			point: &DataPoint{
 				Timestamp: 2,
 			},
-			want: []partition.DataPoint{
+			want: []DataPoint{
 				{
 					Timestamp: 1,
 				},
@@ -66,7 +64,7 @@ func Test_metric_insertPoint(t *testing.T) {
 			name: "insert into the last",
 			metric: metric{
 				name: "metric-a",
-				points: []partition.DataPoint{
+				points: []DataPoint{
 					{
 						Timestamp: 1,
 					},
@@ -76,10 +74,10 @@ func Test_metric_insertPoint(t *testing.T) {
 				},
 				lastIndex: 1,
 			},
-			point: &partition.DataPoint{
+			point: &DataPoint{
 				Timestamp: 3,
 			},
-			want: []partition.DataPoint{
+			want: []DataPoint{
 				{
 					Timestamp: 1,
 				},
@@ -104,7 +102,7 @@ func TestSelectAll(t *testing.T) {
 	tests := []struct {
 		name            string
 		memoryPartition memoryPartition
-		want            []partition.Row
+		want            []Row
 	}{
 		{
 			name: "single data point for single metric",
@@ -112,7 +110,7 @@ func TestSelectAll(t *testing.T) {
 				m := memoryPartition{}
 				m.metrics.Store("metric1", &metric{
 					name: "metric1",
-					points: []partition.DataPoint{
+					points: []DataPoint{
 						{
 							Timestamp: 1,
 							Value:     0.1,
@@ -122,10 +120,10 @@ func TestSelectAll(t *testing.T) {
 				})
 				return m
 			}(),
-			want: []partition.Row{
+			want: []Row{
 				{
 					MetricName: "metric1",
-					DataPoint: partition.DataPoint{
+					DataPoint: DataPoint{
 						Timestamp: 1,
 						Value:     0.1,
 					},
@@ -138,7 +136,7 @@ func TestSelectAll(t *testing.T) {
 				m := memoryPartition{}
 				m.metrics.Store("metric1", &metric{
 					name: "metric1",
-					points: []partition.DataPoint{
+					points: []DataPoint{
 						{
 							Timestamp: 1,
 							Value:     0.1,
@@ -152,7 +150,7 @@ func TestSelectAll(t *testing.T) {
 				})
 				m.metrics.Store("metric2", &metric{
 					name: "metric2",
-					points: []partition.DataPoint{
+					points: []DataPoint{
 						{
 							Timestamp: 1,
 							Value:     0.1,
@@ -166,31 +164,31 @@ func TestSelectAll(t *testing.T) {
 				})
 				return m
 			}(),
-			want: []partition.Row{
+			want: []Row{
 				{
 					MetricName: "metric1",
-					DataPoint: partition.DataPoint{
+					DataPoint: DataPoint{
 						Timestamp: 1,
 						Value:     0.1,
 					},
 				},
 				{
 					MetricName: "metric1",
-					DataPoint: partition.DataPoint{
+					DataPoint: DataPoint{
 						Timestamp: 2,
 						Value:     0.2,
 					},
 				},
 				{
 					MetricName: "metric2",
-					DataPoint: partition.DataPoint{
+					DataPoint: DataPoint{
 						Timestamp: 1,
 						Value:     0.1,
 					},
 				},
 				{
 					MetricName: "metric2",
-					DataPoint: partition.DataPoint{
+					DataPoint: DataPoint{
 						Timestamp: 2,
 						Value:     0.2,
 					},

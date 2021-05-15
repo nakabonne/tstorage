@@ -1,4 +1,4 @@
-package partition
+package tstorage
 
 type fakePartition struct {
 	minTimestamp int64

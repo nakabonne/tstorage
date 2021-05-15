@@ -1,10 +1,8 @@
-package file
+package tstorage
 
 import (
 	"os"
 	"sync"
-
-	"github.com/nakabonne/tstorage/wal"
 )
 
 type fileWAL struct {
@@ -13,11 +11,11 @@ type fileWAL struct {
 	mu       sync.Mutex
 }
 
-func NewFileWAL(filename string) wal.WAL {
+func NewFileWAL(filename string) WAL {
 	return &fileWAL{filename: filename}
 }
 
-func (f fileWAL) Append(entry wal.Entry) error {
+func (f fileWAL) Append(entry Entry) error {
 	// TODO: Implement appending to WAL.
 	return nil
 }

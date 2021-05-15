@@ -5,9 +5,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/nakabonne/tstorage/partition"
-	"github.com/nakabonne/tstorage/partition/memory"
 )
 
 func Test_storage_SelectRows(t *testing.T) {
@@ -17,66 +14,66 @@ func Test_storage_SelectRows(t *testing.T) {
 		metricName string
 		start      int64
 		end        int64
-		want       []partition.DataPoint
+		want       []DataPoint
 	}{
 		{
 			name: "select from three partitions",
 			storage: func() storage {
-				part1 := memory.NewMemoryPartition(nil, 1*time.Hour)
-				err := part1.InsertRows([]partition.Row{
+				part1 := NewMemoryPartition(nil, 1*time.Hour)
+				err := part1.InsertRows([]Row{
 					{
 						MetricName: "metric1",
-						DataPoint:  partition.DataPoint{Timestamp: 1},
+						DataPoint:  DataPoint{Timestamp: 1},
 					},
 					{
 						MetricName: "metric1",
-						DataPoint:  partition.DataPoint{Timestamp: 2},
+						DataPoint:  DataPoint{Timestamp: 2},
 					},
 					{
 						MetricName: "metric1",
-						DataPoint:  partition.DataPoint{Timestamp: 3},
-					},
-				})
-				if err != nil {
-					panic(err)
-				}
-				part2 := memory.NewMemoryPartition(nil, 1*time.Hour)
-				err = part2.InsertRows([]partition.Row{
-					{
-						MetricName: "metric1",
-						DataPoint:  partition.DataPoint{Timestamp: 4},
-					},
-					{
-						MetricName: "metric1",
-						DataPoint:  partition.DataPoint{Timestamp: 5},
-					},
-					{
-						MetricName: "metric1",
-						DataPoint:  partition.DataPoint{Timestamp: 6},
+						DataPoint:  DataPoint{Timestamp: 3},
 					},
 				})
 				if err != nil {
 					panic(err)
 				}
-				part3 := memory.NewMemoryPartition(nil, 1*time.Hour)
-				err = part3.InsertRows([]partition.Row{
+				part2 := NewMemoryPartition(nil, 1*time.Hour)
+				err = part2.InsertRows([]Row{
 					{
 						MetricName: "metric1",
-						DataPoint:  partition.DataPoint{Timestamp: 7},
+						DataPoint:  DataPoint{Timestamp: 4},
 					},
 					{
 						MetricName: "metric1",
-						DataPoint:  partition.DataPoint{Timestamp: 8},
+						DataPoint:  DataPoint{Timestamp: 5},
 					},
 					{
 						MetricName: "metric1",
-						DataPoint:  partition.DataPoint{Timestamp: 9},
+						DataPoint:  DataPoint{Timestamp: 6},
 					},
 				})
 				if err != nil {
 					panic(err)
 				}
-				list := partition.NewPartitionList()
+				part3 := NewMemoryPartition(nil, 1*time.Hour)
+				err = part3.InsertRows([]Row{
+					{
+						MetricName: "metric1",
+						DataPoint:  DataPoint{Timestamp: 7},
+					},
+					{
+						MetricName: "metric1",
+						DataPoint:  DataPoint{Timestamp: 8},
+					},
+					{
+						MetricName: "metric1",
+						DataPoint:  DataPoint{Timestamp: 9},
+					},
+				})
+				if err != nil {
+					panic(err)
+				}
+				list := NewPartitionList()
 				list.Insert(part1)
 				list.Insert(part2)
 				list.Insert(part3)
@@ -89,7 +86,7 @@ func Test_storage_SelectRows(t *testing.T) {
 			metricName: "metric1",
 			start:      0,
 			end:        10,
-			want: []partition.DataPoint{
+			want: []DataPoint{
 				{
 					Timestamp: 1,
 				},

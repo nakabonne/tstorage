@@ -1,4 +1,4 @@
-package disk
+package tstorage
 
 import (
 	"encoding/json"
@@ -6,8 +6,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-
-	"github.com/nakabonne/tstorage/partition"
 )
 
 // See NewDiskPartition for details.
@@ -28,7 +26,7 @@ const chunksDirName = "chunks"
 //
 // A disk partition acts as a partition that uses local disk as a storage.
 // Once initializing a disk partition, it is permanently immutable.
-func NewDiskPartition(dirPath string, rows []partition.Row, minTimestamp, maxTimestamp int64) (partition.Partition, error) {
+func NewDiskPartition(dirPath string, rows []Row, minTimestamp, maxTimestamp int64) (Partition, error) {
 	if dirPath == "" {
 		return nil, fmt.Errorf("dir path is required")
 	}
@@ -71,7 +69,7 @@ func NewDiskPartition(dirPath string, rows []partition.Row, minTimestamp, maxTim
 
 // OpenDiskPartition generates a disk partition from the existent files.
 // If the given dir doesn't exist, use NewDiskPartition instead.
-func OpenDiskPartition(dirPath string) (partition.Partition, error) {
+func OpenDiskPartition(dirPath string) (Partition, error) {
 	if dirPath == "" {
 		return nil, fmt.Errorf("dir path is required")
 	}
@@ -94,25 +92,25 @@ func OpenDiskPartition(dirPath string) (partition.Partition, error) {
 	}, nil
 }
 
-func rowsToBytes(rows []partition.Row) []byte {
+func rowsToBytes(rows []Row) []byte {
 	// FIXME: Compact rows
 	return []byte("not implemented yet")
 }
 
-func (d *diskPartition) InsertRows(_ []partition.Row) error {
+func (d *diskPartition) InsertRows(_ []Row) error {
 	return fmt.Errorf("can't insert rows into disk partition")
 }
 
-func (d *diskPartition) SelectRows(metricName string, start, end int64) []partition.DataPoint {
+func (d *diskPartition) SelectRows(metricName string, start, end int64) []DataPoint {
 	// FIXME: Implement SelectRows from disk partition
 	fmt.Println("select rows for disk partition isn't implemented yet")
-	return []partition.DataPoint{}
+	return []DataPoint{}
 }
 
-func (d *diskPartition) SelectAll() []partition.Row {
+func (d *diskPartition) SelectAll() []Row {
 	// TODO: Implement SelectAll for disk partition
 	fmt.Println("select all for disk partition isn't implemented yet")
-	return []partition.Row{}
+	return []Row{}
 }
 
 func (d *diskPartition) MinTimestamp() int64 {
@@ -130,4 +128,13 @@ func (d *diskPartition) Size() int {
 // Disk partition is immutable.
 func (d *diskPartition) ReadOnly() bool {
 	return true
+}
+
+const metaFileName = "meta.json"
+
+// meta is a mapper for a meta file, which is put for each partition.
+type meta struct {
+	MinTimestamp  int64 `json:"minTimestamp"`
+	MaxTimestamp  int64 `json:"maxTimestamp"`
+	NumDatapoints int   `json:"numDatapoints"`
 }

@@ -1,6 +1,4 @@
-package wal
-
-import "github.com/nakabonne/tstorage/partition"
+package tstorage
 
 type Operation byte
 
@@ -17,5 +15,5 @@ type WAL interface {
 // Entry is an entry in the write-ahead log.
 type Entry struct {
 	Operation Operation
-	Rows      []partition.Row
+	Rows      []Row
 }

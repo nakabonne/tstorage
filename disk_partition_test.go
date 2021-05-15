@@ -1,18 +1,16 @@
-package disk
+package tstorage
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/nakabonne/tstorage/partition"
 )
 
 func TestOpenDiskPartition(t *testing.T) {
 	tests := []struct {
 		name    string
 		dirPath string
-		want    partition.Partition
+		want    Partition
 		wantErr bool
 	}{
 		{

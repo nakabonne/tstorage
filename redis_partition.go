@@ -1,21 +1,19 @@
-package redis
+package tstorage
 
-import "github.com/nakabonne/tstorage/partition"
-
-var _ partition.MemoryPartition = &redisPartition{}
+var _ MemoryPartition = &redisPartition{}
 
 type redisPartition struct {
 }
 
-func (r redisPartition) InsertRows(rows []partition.Row) error {
+func (r redisPartition) InsertRows(rows []Row) error {
 	panic("implement me")
 }
 
-func (r redisPartition) SelectRows(metricName string, start, end int64) []partition.DataPoint {
+func (r redisPartition) SelectRows(metricName string, start, end int64) []DataPoint {
 	panic("implement me")
 }
 
-func (r redisPartition) SelectAll() []partition.Row {
+func (r redisPartition) SelectAll() []Row {
 	panic("implement me")
 }
 

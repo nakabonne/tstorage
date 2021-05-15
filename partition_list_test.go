@@ -1,4 +1,4 @@
-package partition
+package tstorage
 
 import (
 	"testing"
