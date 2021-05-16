@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-// See NewDiskPartition for details.
+// See newDiskPartition for details.
 type diskPartition struct {
 	dirPath string
 
@@ -20,13 +20,13 @@ type diskPartition struct {
 
 const chunksDirName = "chunks"
 
-// NewDiskPartition generates a disk partition from the given data.
+// newDiskPartition generates a disk partition from the given data.
 // If any data exist under the given dirPath, it overrides data with the given initial data.
 // It's typically used for making a brand new partition.
 //
 // A disk partition acts as a partition that uses local disk as a storage.
 // Once initializing a disk partition, it is permanently immutable.
-func NewDiskPartition(dirPath string, rows []Row, minTimestamp, maxTimestamp int64) (partition, error) {
+func newDiskPartition(dirPath string, rows []Row, minTimestamp, maxTimestamp int64) (partition, error) {
 	if dirPath == "" {
 		return nil, fmt.Errorf("dir path is required")
 	}
@@ -68,7 +68,7 @@ func NewDiskPartition(dirPath string, rows []Row, minTimestamp, maxTimestamp int
 }
 
 // OpenDiskPartition generates a disk partition from the existent files.
-// If the given dir doesn't exist, use NewDiskPartition instead.
+// If the given dir doesn't exist, use newDiskPartition instead.
 func OpenDiskPartition(dirPath string) (partition, error) {
 	if dirPath == "" {
 		return nil, fmt.Errorf("dir path is required")

@@ -267,7 +267,7 @@ func (s *storage) FlushRows() error {
 		rows = append(rows, part.SelectAll()...)
 		// TODO: Use https://github.com/oklog/ulid instead of uuid
 		dir := filepath.Join(s.dataPath, fmt.Sprintf("p-%s", uuid.New()))
-		newPart, err := NewDiskPartition(dir, rows, part.MinTimestamp(), part.MaxTimestamp())
+		newPart, err := newDiskPartition(dir, rows, part.MinTimestamp(), part.MaxTimestamp())
 		if err != nil {
 			return fmt.Errorf("failed to generate disk partition for %s: %w", dir, err)
 		}
