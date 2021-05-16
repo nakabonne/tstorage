@@ -3,3 +3,6 @@ test:
 
 dep:
 	go mod tidy
+
+run-examples:
+	go run examples/in-memory/*.go

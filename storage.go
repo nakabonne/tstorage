@@ -62,7 +62,7 @@ type Writer interface {
 	Wait()
 }
 
-// Row comes with properties to identify a kind of metrics.
+// Row includs a data point along with properties to identify a kind of metrics.
 type Row struct {
 	// The unique name of metric.
 	// This field must be set.
@@ -77,7 +77,8 @@ type Row struct {
 type DataPoint struct {
 	// The actual value. This field must be set.
 	Value float64
-	// Unix timestamp. The current time will be populated if zero given.
+	// Unix timestamp.
+	// The current Unix time in nanoseconds will be populated if zero given.
 	Timestamp int64
 }
 
@@ -86,18 +87,30 @@ type Option func(*storage)
 
 // WithDataPath specifies the path to directory that stores time-series data.
 // Use this to make time-series data persistent on disk.
+// Defaults to empty string which means no data will get persisted.
 func WithDataPath(dataPath string) Option {
 	return func(s *storage) {
 		s.dataPath = dataPath
 	}
 }
 
+// WithPartitionDuration specifies the timestamp range of partitions,
+//
+// A partition is a chunk of time-series data with the timestamp range.
+// It acts as a fully independent database containing all data
+// points for its time range.
+// Defaults to 1h
 func WithPartitionDuration(duration time.Duration) Option {
 	return func(s *storage) {
 		s.partitionDuration = duration
 	}
 }
 
+// WithWriteTimeout specifies the timeout to wait when workers are busy.
+//
+// The store limits the number of concurrent goroutines to prevent from out of memory
+// errors and CPU trashing even if too many goroutines attempt to write.
+// Defaults to 30m.
 func WithWriteTimeout(timeout time.Duration) Option {
 	return func(s *storage) {
 		s.writeTimeout = timeout
@@ -230,9 +243,9 @@ func (s *storage) getPartition() partition {
 	return p
 }
 
-func (s *storage) SelectRows(labels []Label, start, end int64) (DataPointIterator, int, error) {
-	if len(labels) == 0 {
-		return nil, 0, fmt.Errorf("no labels given")
+func (s *storage) SelectRows(metric string, labels []Label, start, end int64) (DataPointIterator, int, error) {
+	if metric == "" {
+		return nil, 0, fmt.Errorf("metric must be set")
 	}
 	if start >= end {
 		return nil, 0, fmt.Errorf("thg given start is greater than end")
@@ -253,7 +266,7 @@ func (s *storage) SelectRows(labels []Label, start, end int64) (DataPointIterato
 		if part.MinTimestamp() > end {
 			continue
 		}
-		list := part.SelectRows(labels, start, end)
+		list := part.SelectRows(metric, labels, start, end)
 		// in order to keep the order in ascending.
 		pointLists = append([]dataPointList{list}, pointLists...)
 	}

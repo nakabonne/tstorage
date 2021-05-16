@@ -6,12 +6,6 @@ import (
 	"github.com/nakabonne/tstorage/internal/encoding"
 )
 
-// Label is a time-series label.
-type Label struct {
-	Name  string
-	Value string
-}
-
 const (
 	// The maximum length of label name.
 	//
@@ -24,10 +18,21 @@ const (
 	maxLabelValueLen = 16 * 1024
 )
 
+// Label is a time-series label.
+// A label with missing value is invalid.
+type Label struct {
+	Name  string
+	Value string
+}
+
 // marshalMetricName builds a unique bytes by encoding labels.
-func marshalMetricName(labels []Label) string {
+func marshalMetricName(metric string, labels []Label) string {
+	if len(labels) == 0 {
+		return metric
+	}
+
 	// Determine the bytes size in advance.
-	size := 0
+	size := len(metric) + 2
 	sort.Slice(labels, func(i, j int) bool {
 		return labels[i].Name < labels[j].Name
 	})
@@ -46,8 +51,11 @@ func marshalMetricName(labels []Label) string {
 		size += len(label.Value)
 		size += 4
 	}
-	out := make([]byte, 0, size)
+
 	// Start building the bytes.
+	out := make([]byte, 0, size)
+	out = encoding.MarshalUint16(out, uint16(len(metric)))
+	out = append(out, metric...)
 	for i := range labels {
 		label := &labels[i]
 		if len(label.Value) == 0 {

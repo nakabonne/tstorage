@@ -11,6 +11,7 @@ func Test_storage_SelectRows(t *testing.T) {
 	tests := []struct {
 		name     string
 		storage  storage
+		metric   string
 		labels   []Label
 		start    int64
 		end      int64
@@ -19,44 +20,24 @@ func Test_storage_SelectRows(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name: "select from single partition",
-			labels: []Label{
-				{
-					Name:  "__name__",
-					Value: "metric1",
-				},
-			},
-			start: 0,
-			end:   4,
+			name:   "select from single partition",
+			metric: "metric1",
+			start:  0,
+			end:    4,
 			storage: func() storage {
 				part1 := newMemoryPartition(nil, 1*time.Hour)
 				err := part1.InsertRows([]Row{
 					{
 						DataPoint: DataPoint{Timestamp: 1},
-						Labels: []Label{
-							{
-								Name:  "__name__",
-								Value: "metric1",
-							},
-						},
+						Metric:    "metric1",
 					},
 					{
 						DataPoint: DataPoint{Timestamp: 2},
-						Labels: []Label{
-							{
-								Name:  "__name__",
-								Value: "metric1",
-							},
-						},
+						Metric:    "metric1",
 					},
 					{
 						DataPoint: DataPoint{Timestamp: 3},
-						Labels: []Label{
-							{
-								Name:  "__name__",
-								Value: "metric1",
-							},
-						},
+						Metric:    "metric1",
 					},
 				})
 				if err != nil {
@@ -83,44 +64,24 @@ func Test_storage_SelectRows(t *testing.T) {
 			wantSize: 3,
 		},
 		{
-			name: "select from three partitions",
-			labels: []Label{
-				{
-					Name:  "__name__",
-					Value: "metric1",
-				},
-			},
-			start: 0,
-			end:   10,
+			name:   "select from three partitions",
+			metric: "metric1",
+			start:  0,
+			end:    10,
 			storage: func() storage {
 				part1 := newMemoryPartition(nil, 1*time.Hour)
 				err := part1.InsertRows([]Row{
 					{
 						DataPoint: DataPoint{Timestamp: 1},
-						Labels: []Label{
-							{
-								Name:  "__name__",
-								Value: "metric1",
-							},
-						},
+						Metric:    "metric1",
 					},
 					{
 						DataPoint: DataPoint{Timestamp: 2},
-						Labels: []Label{
-							{
-								Name:  "__name__",
-								Value: "metric1",
-							},
-						},
+						Metric:    "metric1",
 					},
 					{
 						DataPoint: DataPoint{Timestamp: 3},
-						Labels: []Label{
-							{
-								Name:  "__name__",
-								Value: "metric1",
-							},
-						},
+						Metric:    "metric1",
 					},
 				})
 				if err != nil {
@@ -130,30 +91,15 @@ func Test_storage_SelectRows(t *testing.T) {
 				err = part2.InsertRows([]Row{
 					{
 						DataPoint: DataPoint{Timestamp: 4},
-						Labels: []Label{
-							{
-								Name:  "__name__",
-								Value: "metric1",
-							},
-						},
+						Metric:    "metric1",
 					},
 					{
 						DataPoint: DataPoint{Timestamp: 5},
-						Labels: []Label{
-							{
-								Name:  "__name__",
-								Value: "metric1",
-							},
-						},
+						Metric:    "metric1",
 					},
 					{
 						DataPoint: DataPoint{Timestamp: 6},
-						Labels: []Label{
-							{
-								Name:  "__name__",
-								Value: "metric1",
-							},
-						},
+						Metric:    "metric1",
 					},
 				})
 				if err != nil {
@@ -163,30 +109,15 @@ func Test_storage_SelectRows(t *testing.T) {
 				err = part3.InsertRows([]Row{
 					{
 						DataPoint: DataPoint{Timestamp: 7},
-						Labels: []Label{
-							{
-								Name:  "__name__",
-								Value: "metric1",
-							},
-						},
+						Metric:    "metric1",
 					},
 					{
 						DataPoint: DataPoint{Timestamp: 8},
-						Labels: []Label{
-							{
-								Name:  "__name__",
-								Value: "metric1",
-							},
-						},
+						Metric:    "metric1",
 					},
 					{
 						DataPoint: DataPoint{Timestamp: 9},
-						Labels: []Label{
-							{
-								Name:  "__name__",
-								Value: "metric1",
-							},
-						},
+						Metric:    "metric1",
 					},
 				})
 				if err != nil {
@@ -236,7 +167,7 @@ func Test_storage_SelectRows(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iterator, gotSize, err := tt.storage.SelectRows(tt.labels, tt.start, tt.end)
+			iterator, gotSize, err := tt.storage.SelectRows(tt.metric, tt.labels, tt.start, tt.end)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.wantSize, gotSize)
 			got := []DataPoint{}

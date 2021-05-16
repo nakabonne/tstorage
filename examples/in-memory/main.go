@@ -11,15 +11,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	labels := []tstorage.Label{
-		{
-			Name:  "__name__",
-			Value: "metric1",
-		},
-	}
 	err = storage.InsertRows([]tstorage.Row{
 		{
-			Labels: labels,
+			Metric: "metric1",
 			DataPoint: tstorage.DataPoint{
 				Timestamp: 1600000,
 				Value:     0.1,
@@ -29,12 +23,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	iterator, _, err := storage.SelectRows(labels, 1600000, 1600001)
+	iterator, _, err := storage.SelectRows("metric1", nil, 1600000, 1600001)
 	if err != nil {
 		log.Fatal(err)
 	}
 	for iterator.Next() {
-		log.Printf("value: %v\n", iterator.Value())
+		log.Printf("timestamp: %v, value: %v\n", iterator.Value().Timestamp, iterator.Value().Value)
 	}
 }

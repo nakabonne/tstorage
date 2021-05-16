@@ -13,7 +13,7 @@ func (f *fakePartition) InsertRows(_ []Row) error {
 	return f.err
 }
 
-func (f *fakePartition) SelectRows(_ []Label, _, _ int64) dataPointList {
+func (f *fakePartition) SelectRows(_ string, _ []Label, _, _ int64) dataPointList {
 	return nil
 }
 

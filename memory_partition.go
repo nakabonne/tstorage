@@ -51,13 +51,16 @@ func (m *memoryPartition) InsertRows(rows []Row) error {
 	var rowsNum int64
 	for i := range rows {
 		row := rows[i]
+		if row.Timestamp == 0 {
+			row.Timestamp = time.Now().UnixNano()
+		}
 		if row.Timestamp < minTimestamp {
 			minTimestamp = row.Timestamp
 		}
 		if row.Timestamp > maxTimestamp {
 			maxTimestamp = row.Timestamp
 		}
-		name := marshalMetricName(row.Labels)
+		name := marshalMetricName(row.Metric, row.Labels)
 		mt := m.getMetric(name)
 		mt.insertPoint(&row.DataPoint)
 		rowsNum++
@@ -76,8 +79,8 @@ func (m *memoryPartition) InsertRows(rows []Row) error {
 }
 
 // SelectRows gives back the certain data points within the given range.
-func (m *memoryPartition) SelectRows(labels []Label, start, end int64) dataPointList {
-	name := marshalMetricName(labels)
+func (m *memoryPartition) SelectRows(metric string, labels []Label, start, end int64) dataPointList {
+	name := marshalMetricName(metric, labels)
 	mt := m.getMetric(name)
 	return mt.selectPoints(start, end)
 }

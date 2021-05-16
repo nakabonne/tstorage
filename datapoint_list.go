@@ -39,6 +39,7 @@ type DataPointIterator interface {
 	Next() bool
 	// Value gives back the current dataPoint in the iterator.
 	// If it was called even though Next() returns false, it will return nil.
+	// FIXME: Rename to DataPoint
 	Value() *DataPoint
 
 	// node gives back the current node itself.
