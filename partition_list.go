@@ -6,14 +6,14 @@ import (
 	"sync/atomic"
 )
 
-// PartitionList represents a linked list for partitions.
+// partitionList represents a linked list for partitions.
 // Each partition is arranged in order order of newest to oldest.
 // That is, the head node is always the newest, the tail node is the oldest.
 // Only head partition should be writable.
 //
 // FYI: Partitions are frequently added/deleted, on the other hand,
 // no need to take values by specifying indexes. That's why linked list is suitable.
-type PartitionList interface {
+type partitionList interface {
 	// insert appends a new node to the head.
 	insert(partition partition)
 	// remove eliminates the given partition from the list.
@@ -54,7 +54,7 @@ type partitionListImpl struct {
 	mu            sync.RWMutex
 }
 
-func newPartitionList() PartitionList {
+func newPartitionList() partitionList {
 	return &partitionListImpl{}
 }
 

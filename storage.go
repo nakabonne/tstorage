@@ -158,7 +158,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 }
 
 type storage struct {
-	partitionList PartitionList
+	partitionList partitionList
 
 	wal               wal
 	partitionDuration time.Duration
