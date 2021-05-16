@@ -47,7 +47,7 @@ type partitionIterator interface {
 	currentNode() *partitionNode
 }
 
-type partitionList struct {
+type partitionListImpl struct {
 	size int64
 	head *partitionNode
 	tail *partitionNode
@@ -55,16 +55,16 @@ type partitionList struct {
 }
 
 func NewPartitionList() PartitionList {
-	return &partitionList{}
+	return &partitionListImpl{}
 }
 
-func (p *partitionList) GetHead() partition {
+func (p *partitionListImpl) GetHead() partition {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.head.value()
 }
 
-func (p *partitionList) Insert(partition partition) {
+func (p *partitionListImpl) Insert(partition partition) {
 	node := &partitionNode{
 		val: partition,
 	}
@@ -79,7 +79,7 @@ func (p *partitionList) Insert(partition partition) {
 	atomic.AddInt64(&p.size, 1)
 }
 
-func (p *partitionList) Remove(target partition) error {
+func (p *partitionListImpl) Remove(target partition) error {
 	if p.Size() <= 0 {
 		return fmt.Errorf("empty partition")
 	}
@@ -117,7 +117,7 @@ func (p *partitionList) Remove(target partition) error {
 	return fmt.Errorf("the given partition was not found")
 }
 
-func (p *partitionList) Swap(old, new partition) error {
+func (p *partitionListImpl) Swap(old, new partition) error {
 	if p.Size() <= 0 {
 		return fmt.Errorf("empty partition")
 	}
@@ -163,11 +163,11 @@ func samePartitions(x, y partition) bool {
 	return x.MinTimestamp() == y.MinTimestamp()
 }
 
-func (p *partitionList) Size() int {
+func (p *partitionListImpl) Size() int {
 	return int(atomic.LoadInt64(&p.size))
 }
 
-func (p *partitionList) NewIterator() partitionIterator {
+func (p *partitionListImpl) NewIterator() partitionIterator {
 	p.mu.RLock()
 	head := p.head
 	p.mu.RUnlock()
@@ -180,13 +180,13 @@ func (p *partitionList) NewIterator() partitionIterator {
 	}
 }
 
-func (p *partitionList) setHead(node *partitionNode) {
+func (p *partitionListImpl) setHead(node *partitionNode) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.head = node
 }
 
-func (p *partitionList) setTail(node *partitionNode) {
+func (p *partitionListImpl) setTail(node *partitionNode) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.tail = node
