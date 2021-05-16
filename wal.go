@@ -1,19 +1,19 @@
 package tstorage
 
-type Operation byte
+type walOperation byte
 
 const (
-	OperationInsert Operation = iota
+	operationInsert walOperation = iota
 )
 
-// WAL is a write-ahead log.
+// wal is a write-ahead log.
 // See more: https://martinfowler.com/articles/patterns-of-distributed-systems/wal.html
-type WAL interface {
-	Append(entry Entry) error
+type wal interface {
+	append(entry walEntry) error
 }
 
-// Entry is an entry in the write-ahead log.
-type Entry struct {
-	Operation Operation
-	Rows      []Row
+// walEntry is an entry in the write-ahead log.
+type walEntry struct {
+	operation walOperation
+	rows      []Row
 }

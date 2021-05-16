@@ -11,11 +11,11 @@ type fileWAL struct {
 	mu       sync.Mutex
 }
 
-func NewFileWAL(filename string) WAL {
+func newFileWal(filename string) wal {
 	return &fileWAL{filename: filename}
 }
 
-func (f fileWAL) Append(entry Entry) error {
-	// TODO: Implement appending to WAL.
+func (f fileWAL) append(entry walEntry) error {
+	// TODO: Implement appending to wal.
 	return nil
 }

@@ -104,7 +104,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 		return s, nil
 	}
 
-	s.wal = NewFileWAL(filepath.Join(s.dataPath, "wal"))
+	s.wal = newFileWal(filepath.Join(s.dataPath, "wal"))
 	if err := os.MkdirAll(s.dataPath, fs.ModePerm); err != nil {
 		return nil, fmt.Errorf("failed to make data directory %s: %w", s.dataPath, err)
 	}
@@ -147,7 +147,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 type storage struct {
 	partitionList PartitionList
 
-	wal               WAL
+	wal               wal
 	partitionDuration time.Duration
 	dataPath          string
 	writeTimeout      time.Duration

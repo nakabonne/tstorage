@@ -14,7 +14,7 @@ type memoryPartition struct {
 	// A hash map from metric-name to metric.
 	metrics sync.Map
 	// Write ahead log.
-	wal WAL
+	wal wal
 	// The number of data points
 	size int64
 	// The timestamp range of partitions after which they get persisted
@@ -25,7 +25,7 @@ type memoryPartition struct {
 }
 
 // NewMemoryPartition generates a partition to store on the process memory.
-func NewMemoryPartition(wal WAL, partitionDuration time.Duration) Partition {
+func NewMemoryPartition(wal wal, partitionDuration time.Duration) Partition {
 	return &memoryPartition{
 		partitionDuration: partitionDuration.Milliseconds(),
 		wal:               wal,
@@ -41,9 +41,9 @@ func (m *memoryPartition) InsertRows(rows []Row) error {
 		return fmt.Errorf("read only partition")
 	}
 	if m.wal != nil {
-		m.wal.Append(Entry{
-			Operation: OperationInsert,
-			Rows:      rows,
+		m.wal.append(walEntry{
+			operation: operationInsert,
+			rows:      rows,
 		})
 	}
 
