@@ -51,8 +51,7 @@ type Reader interface {
 			fmt.Printf("value: %v\n", iterator.value())
 		}
 	*/
-	// FIXME: Use metricName, not only labels
-	SelectRows(labels []Label, start, end int64) (iterator DataPointIterator, size int, err error)
+	SelectRows(metric string, labels []Label, start, end int64) (iterator DataPointIterator, size int, err error)
 }
 
 // Writer provides writing access to time series data.
@@ -65,17 +64,24 @@ type Writer interface {
 
 // Row comes with properties to identify a kind of metrics.
 type Row struct {
-	DataPoint
+	// The unique name of metric.
+	// This field must be set.
+	Metric string
+	// An optional key-value properties to further detailed identification.
 	Labels []Label
+	// This field must be set.
+	DataPoint
 }
 
 // DataPoint represents a data point, the smallest unit of time series data.
 type DataPoint struct {
-	// Unix timestamp
+	// The actual value. This field must be set.
+	Value float64
+	// Unix timestamp. The current time will be populated if zero given.
 	Timestamp int64
-	Value     float64
 }
 
+// Option is an optional setting for NewStorage.
 type Option func(*storage)
 
 // WithDataPath specifies the path to directory that stores time-series data.
