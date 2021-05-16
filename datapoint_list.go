@@ -1,6 +1,7 @@
 package tstorage
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 )
@@ -19,13 +20,16 @@ type dataPointList interface {
 	// newIterator gives back the iterator object fot this list.
 	// If you need to inspect all nodes within the list, use this one.
 	newIterator() DataPointIterator
+
+	getHead() *dataPointNode
+	getTail() *dataPointNode
 }
 
 // DataPointIterator represents an iterator for data point list. The basic usage is:
 /*
   for iterator.Next() {
-    point, err := iterator.Value()
-    // Do something withdataPoint
+    point := iterator.Value()
+    // Do something with dataPoint
   }
 */
 type DataPointIterator interface {
@@ -34,7 +38,7 @@ type DataPointIterator interface {
 	// The return value will be true if a value can be read from the list.
 	Next() bool
 	// Value gives back the current dataPoint in the iterator.
-	// Don't call for nil node.
+	// If it was called even though Next() returns false, it will return nil.
 	Value() *DataPoint
 
 	// node gives back the current node itself.
@@ -57,11 +61,37 @@ func newDataPointList(head, tail *dataPointNode, size int64) dataPointList {
 	}
 }
 
+// mergeDataPointLists merges the two lists into one list which is in ascending order.
+func mergeDataPointLists(lists ...dataPointList) (dataPointList, error) {
+	if len(lists) == 0 {
+		return nil, fmt.Errorf("no data point list given")
+	}
+	if len(lists) == 1 {
+		return lists[0], nil
+	}
+
+	// TODO: Improve performance of merging data points across multiple partitions
+	newList := newDataPointList(nil, nil, 0)
+	for _, list := range lists {
+		iterator := list.newIterator()
+		for iterator.Next() {
+			newList.insert(iterator.Value())
+		}
+	}
+	return newList, nil
+}
+
 func (l *dataPointListImpl) insert(point *DataPoint) {
 	newNode := &dataPointNode{
 		val: point,
 	}
 	tail := l.getTail()
+	if tail == nil {
+		// First insertion
+		l.setHead(newNode)
+		l.setTail(newNode)
+		return
+	}
 	if tail.value().Timestamp < point.Timestamp {
 		// Append to the tail
 		newNode.setPrev(tail)
@@ -70,7 +100,7 @@ func (l *dataPointListImpl) insert(point *DataPoint) {
 		return
 	}
 
-	// FIXME: Insert out-of-order data point to appropriate place.
+	// FIXME: Insert out-of-order data point to appropriate place, by traversing in order of tail to head.
 
 	atomic.AddInt64(&l.numPoints, 1)
 }
@@ -102,6 +132,12 @@ func (l *dataPointListImpl) setTail(node *dataPointNode) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.tail = node
+}
+
+func (l *dataPointListImpl) getHead() *dataPointNode {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.head
 }
 
 func (l *dataPointListImpl) getTail() *dataPointNode {

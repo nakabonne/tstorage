@@ -42,8 +42,7 @@ type Storage interface {
 
 // Reader provides reading access to time series data.
 type Reader interface {
-	// FIXME: Consider changing the return value to an iterator
-	SelectRows(metricName string, start, end int64) ([]DataPoint, error)
+	SelectRows(metricName string, start, end int64) (iterator DataPointIterator, size int, err error)
 }
 
 // Writer provides writing access to time series data.
@@ -197,15 +196,15 @@ func (s *storage) getPartition() Partition {
 	return p
 }
 
-func (s *storage) SelectRows(metricName string, start, end int64) ([]DataPoint, error) {
-	res := make([]DataPoint, 0)
+func (s *storage) SelectRows(metricName string, start, end int64) (DataPointIterator, int, error) {
+	pointLists := make([]dataPointList, 0)
 
 	// Iterate over all partitions from the newest one.
 	iterator := s.partitionList.NewIterator()
 	for iterator.Next() {
 		part, err := iterator.Value()
 		if err != nil {
-			return nil, fmt.Errorf("invalid partition found: %w", err)
+			return nil, 0, fmt.Errorf("invalid partition found: %w", err)
 		}
 		if part.MaxTimestamp() < start {
 			// No need to keep going anymore
@@ -214,11 +213,15 @@ func (s *storage) SelectRows(metricName string, start, end int64) ([]DataPoint, 
 		if part.MinTimestamp() > end {
 			continue
 		}
-		points := part.SelectRows(metricName, start, end)
+		list := part.SelectRows(metricName, start, end)
 		// in order to keep the order in ascending.
-		res = append(points, res...)
+		pointLists = append([]dataPointList{list}, pointLists...)
 	}
-	return res, nil
+	mergedList, err := mergeDataPointLists(pointLists...)
+	if err != nil {
+		return nil, 0, err
+	}
+	return mergedList.newIterator(), mergedList.size(), nil
 }
 
 func (s *storage) FlushRows() error {

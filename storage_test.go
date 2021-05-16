@@ -15,10 +15,73 @@ func Test_storage_SelectRows(t *testing.T) {
 		start      int64
 		end        int64
 		want       []DataPoint
+		wantSize   int
 		wantErr    bool
 	}{
 		{
-			name: "select from three partitions",
+			name:       "select from single partition",
+			metricName: "\x00\b__name__\x00\ametric1",
+			start:      0,
+			end:        4,
+			storage: func() storage {
+				part1 := NewMemoryPartition(nil, 1*time.Hour)
+				err := part1.InsertRows([]Row{
+					{
+						DataPoint: DataPoint{Timestamp: 1},
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
+					},
+					{
+						DataPoint: DataPoint{Timestamp: 2},
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
+					},
+					{
+						DataPoint: DataPoint{Timestamp: 3},
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
+					},
+				})
+				if err != nil {
+					panic(err)
+				}
+				list := NewPartitionList()
+				list.Insert(part1)
+				return storage{
+					partitionList:  list,
+					workersLimitCh: make(chan struct{}, defaultWorkersLimit),
+				}
+			}(),
+			want: []DataPoint{
+				{
+					Timestamp: 1,
+				},
+				{
+					Timestamp: 2,
+				},
+				{
+					Timestamp: 3,
+				},
+			},
+			wantSize: 3,
+		},
+		{
+			name:       "select from three partitions",
+			metricName: "\x00\b__name__\x00\ametric1",
+			start:      0,
+			end:        10,
 			storage: func() storage {
 				part1 := NewMemoryPartition(nil, 1*time.Hour)
 				err := part1.InsertRows([]Row{
@@ -129,9 +192,6 @@ func Test_storage_SelectRows(t *testing.T) {
 					workersLimitCh: make(chan struct{}, defaultWorkersLimit),
 				}
 			}(),
-			metricName: "\x00\b__name__\x00\ametric1",
-			start:      0,
-			end:        10,
 			want: []DataPoint{
 				{
 					Timestamp: 1,
@@ -161,12 +221,18 @@ func Test_storage_SelectRows(t *testing.T) {
 					Timestamp: 9,
 				},
 			},
+			wantSize: 10,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.storage.SelectRows(tt.metricName, tt.start, tt.end)
+			iterator, gotSize, err := tt.storage.SelectRows(tt.metricName, tt.start, tt.end)
 			assert.Equal(t, tt.wantErr, err != nil)
+			assert.Equal(t, tt.wantSize, gotSize)
+			got := []DataPoint{}
+			for iterator.Next() {
+				got = append(got, *iterator.Value())
+			}
 			assert.Equal(t, tt.want, got)
 		})
 	}

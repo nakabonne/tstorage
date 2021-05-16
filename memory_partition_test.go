@@ -1,44 +1,5 @@
 package tstorage
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func Test_metric_insertPoint(t *testing.T) {
-	tests := []struct {
-		name   string
-		metric metric
-		point  *DataPoint
-		want   []DataPoint
-	}{
-		{
-			name: "the first insertion",
-			metric: metric{
-				name:   "metric-a",
-				points: newDataPointList(nil, nil, 0),
-			},
-			point: &DataPoint{
-				Timestamp: 1,
-				Value:     0,
-			},
-			want: []DataPoint{
-				{
-					Timestamp: 1,
-					Value:     0,
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.metric.insertPoint(tt.point)
-			assert.Equal(t, tt.want, tt.metric.points)
-		})
-	}
-}
-
 /*
 func TestSelectAll(t *testing.T) {
 	tests := []struct {
