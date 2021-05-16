@@ -50,7 +50,8 @@ func (m *memoryPartition) InsertRows(rows []Row) error {
 	minTimestamp := rows[0].Timestamp
 	maxTimestamp := rows[0].Timestamp
 	var rowsNum int64
-	for _, row := range rows {
+	for i := range rows {
+		row := rows[i]
 		if row.Timestamp < minTimestamp {
 			minTimestamp = row.Timestamp
 		}

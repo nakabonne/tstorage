@@ -90,13 +90,15 @@ func (l *dataPointListImpl) insert(point *DataPoint) {
 		// First insertion
 		l.setHead(newNode)
 		l.setTail(newNode)
+		atomic.AddInt64(&l.numPoints, 1)
 		return
 	}
-	if tail.value().Timestamp < point.Timestamp {
+	if tail.value().Timestamp <= point.Timestamp {
 		// Append to the tail
 		newNode.setPrev(tail)
 		tail.setNext(newNode)
 		l.setTail(newNode)
+		atomic.AddInt64(&l.numPoints, 1)
 		return
 	}
 

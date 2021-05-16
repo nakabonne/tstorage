@@ -42,6 +42,7 @@ type Storage interface {
 
 // Reader provides reading access to time series data.
 type Reader interface {
+	// FIXME: Use labels instead of metricname
 	SelectRows(metricName string, start, end int64) (iterator DataPointIterator, size int, err error)
 }
 

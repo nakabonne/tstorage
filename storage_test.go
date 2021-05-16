@@ -221,7 +221,7 @@ func Test_storage_SelectRows(t *testing.T) {
 					Timestamp: 9,
 				},
 			},
-			wantSize: 10,
+			wantSize: 9,
 		},
 	}
 	for _, tt := range tests {

@@ -1,5 +1,185 @@
 package tstorage
 
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func Test_memoryPartition_InsertRows(t *testing.T) {
+	tests := []struct {
+		name            string
+		memoryPartition memoryPartition
+		rows            []Row
+		wantErr         bool
+		wantDataPoints  []DataPoint
+	}{
+		{
+			name:            "insert multiple rows",
+			memoryPartition: memoryPartition{},
+			rows: []Row{
+				{
+					Labels: []Label{
+						{
+							Name:  "__name__",
+							Value: "metric1",
+						},
+					},
+					DataPoint: DataPoint{
+						Timestamp: 1,
+						Value:     0.1,
+					},
+				},
+				{
+					Labels: []Label{
+						{
+							Name:  "__name__",
+							Value: "metric1",
+						},
+					},
+					DataPoint: DataPoint{
+						Timestamp: 2,
+						Value:     0.1,
+					},
+				},
+				{
+					Labels: []Label{
+						{
+							Name:  "__name__",
+							Value: "metric1",
+						},
+					},
+					DataPoint: DataPoint{
+						Timestamp: 3,
+						Value:     0.1,
+					},
+				},
+			},
+			wantDataPoints: []DataPoint{
+				{
+					Timestamp: 1,
+					Value:     0.1,
+				},
+				{
+					Timestamp: 2,
+					Value:     0.1,
+				},
+				{
+					Timestamp: 3,
+					Value:     0.1,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.memoryPartition.InsertRows(tt.rows)
+			assert.Equal(t, tt.wantErr, err != nil)
+
+			list := tt.memoryPartition.SelectRows("\x00\b__name__\x00\ametric1", 0, 4)
+			iterator := list.newIterator()
+			got := []DataPoint{}
+			for iterator.Next() {
+				got = append(got, *iterator.Value())
+			}
+			assert.Equal(t, tt.wantDataPoints, got)
+		})
+	}
+}
+
+func Test_memoryPartition_SelectRows(t *testing.T) {
+	tests := []struct {
+		name            string
+		metricName      string
+		start           int64
+		end             int64
+		memoryPartition memoryPartition
+		want            []DataPoint
+	}{
+		{
+			name:            "given non-exist metric name",
+			metricName:      "unknown",
+			start:           1,
+			end:             2,
+			memoryPartition: memoryPartition{},
+			want:            []DataPoint{},
+		},
+		{
+			name:       "select multiple points",
+			metricName: "\x00\b__name__\x00\ametric1",
+			start:      0,
+			end:        3,
+			memoryPartition: func() memoryPartition {
+				m := memoryPartition{}
+				m.InsertRows([]Row{
+					{
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
+						DataPoint: DataPoint{
+							Timestamp: 1,
+							Value:     0.1,
+						},
+					},
+					{
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
+						DataPoint: DataPoint{
+							Timestamp: 2,
+							Value:     0.1,
+						},
+					},
+					{
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
+						DataPoint: DataPoint{
+							Timestamp: 3,
+							Value:     0.1,
+						},
+					},
+				})
+				return m
+			}(),
+			want: []DataPoint{
+				{
+					Timestamp: 1,
+					Value:     0.1,
+				},
+				{
+					Timestamp: 2,
+					Value:     0.1,
+				},
+				{
+					Timestamp: 3,
+					Value:     0.1,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			list := tt.memoryPartition.SelectRows(tt.metricName, tt.start, tt.end)
+			iterator := list.newIterator()
+			got := []DataPoint{}
+			for iterator.Next() {
+				got = append(got, *iterator.Value())
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 /*
 func TestSelectAll(t *testing.T) {
 	tests := []struct {
