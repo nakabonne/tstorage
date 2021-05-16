@@ -10,7 +10,7 @@ func Test_partitionList_Remove(t *testing.T) {
 	tests := []struct {
 		name              string
 		partitionList     partitionList
-		target            Partition
+		target            partition
 		wantErr           bool
 		wantPartitionList partitionList
 	}{
@@ -202,8 +202,8 @@ func Test_partitionList_Swap(t *testing.T) {
 	tests := []struct {
 		name              string
 		partitionList     partitionList
-		old               Partition
-		new               Partition
+		old               partition
+		new               partition
 		wantErr           bool
 		wantPartitionList partitionList
 	}{
@@ -414,7 +414,7 @@ func Test_partitionList_Swap(t *testing.T) {
 			/*
 				// Check if the partition list is as same as we'd like
 				iterator := tt.partitionList.NewIterator()
-				partitons := make([]Partition, 0, tt.partitionList.Size())
+				partitons := make([]partition, 0, tt.partitionList.Size())
 				for iterator.Next() {
 					v, err := iterator.Value()
 					assert.NoError(t, err)

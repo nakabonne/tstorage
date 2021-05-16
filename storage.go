@@ -123,7 +123,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 	isPartitionDir := func(f fs.FileInfo) bool {
 		return f.IsDir() && partitionDirRegex.MatchString(f.Name())
 	}
-	partitions := make([]Partition, 0, len(files))
+	partitions := make([]partition, 0, len(files))
 	for _, f := range files {
 		if !isPartitionDir(f) {
 			continue
@@ -195,7 +195,7 @@ func (s *storage) InsertRows(rows []Row) error {
 }
 
 // getPartition returns a writable partition. If none, it creates a new one.
-func (s *storage) getPartition() Partition {
+func (s *storage) getPartition() partition {
 	head := s.partitionList.GetHead()
 	if !head.ReadOnly() {
 		return head

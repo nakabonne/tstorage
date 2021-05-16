@@ -10,7 +10,7 @@ func TestOpenDiskPartition(t *testing.T) {
 	tests := []struct {
 		name    string
 		dirPath string
-		want    Partition
+		want    partition
 		wantErr bool
 	}{
 		{

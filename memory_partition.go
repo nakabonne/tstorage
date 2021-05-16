@@ -25,7 +25,7 @@ type memoryPartition struct {
 }
 
 // NewMemoryPartition generates a partition to store on the process memory.
-func NewMemoryPartition(wal wal, partitionDuration time.Duration) Partition {
+func NewMemoryPartition(wal wal, partitionDuration time.Duration) partition {
 	return &memoryPartition{
 		partitionDuration: partitionDuration.Milliseconds(),
 		wal:               wal,

@@ -26,7 +26,7 @@ const chunksDirName = "chunks"
 //
 // A disk partition acts as a partition that uses local disk as a storage.
 // Once initializing a disk partition, it is permanently immutable.
-func NewDiskPartition(dirPath string, rows []Row, minTimestamp, maxTimestamp int64) (Partition, error) {
+func NewDiskPartition(dirPath string, rows []Row, minTimestamp, maxTimestamp int64) (partition, error) {
 	if dirPath == "" {
 		return nil, fmt.Errorf("dir path is required")
 	}
@@ -69,7 +69,7 @@ func NewDiskPartition(dirPath string, rows []Row, minTimestamp, maxTimestamp int
 
 // OpenDiskPartition generates a disk partition from the existent files.
 // If the given dir doesn't exist, use NewDiskPartition instead.
-func OpenDiskPartition(dirPath string) (Partition, error) {
+func OpenDiskPartition(dirPath string) (partition, error) {
 	if dirPath == "" {
 		return nil, fmt.Errorf("dir path is required")
 	}

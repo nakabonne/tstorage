@@ -15,13 +15,13 @@ import (
 // no need to take values by specifying indexes. That's why linked list is suitable.
 type PartitionList interface {
 	// Insert appends a new node to the head.
-	Insert(partition Partition)
+	Insert(partition partition)
 	// Remove eliminates the given partition from the list.
-	Remove(partition Partition) error
+	Remove(partition partition) error
 	// Swap replaces the old partition with the new one.
-	Swap(old, new Partition) error
+	Swap(old, new partition) error
 	// GetHead gives back the head node which is the newest one.
-	GetHead() Partition
+	GetHead() partition
 	// Size returns the size of itself.
 	Size() int
 	// NewIterator gives back the iterator object fot this list.
@@ -41,8 +41,8 @@ type partitionIterator interface {
 	// It will be positioned at the head on the first call.
 	// The return value will be true if a value can be read from the list.
 	Next() bool
-	// Value gives back the current Partition in the iterator.
-	Value() (Partition, error)
+	// Value gives back the current partition in the iterator.
+	Value() (partition, error)
 
 	currentNode() *partitionNode
 }
@@ -58,13 +58,13 @@ func NewPartitionList() PartitionList {
 	return &partitionList{}
 }
 
-func (p *partitionList) GetHead() Partition {
+func (p *partitionList) GetHead() partition {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.head.value()
 }
 
-func (p *partitionList) Insert(partition Partition) {
+func (p *partitionList) Insert(partition partition) {
 	node := &partitionNode{
 		val: partition,
 	}
@@ -79,7 +79,7 @@ func (p *partitionList) Insert(partition Partition) {
 	atomic.AddInt64(&p.size, 1)
 }
 
-func (p *partitionList) Remove(target Partition) error {
+func (p *partitionList) Remove(target partition) error {
 	if p.Size() <= 0 {
 		return fmt.Errorf("empty partition")
 	}
@@ -117,7 +117,7 @@ func (p *partitionList) Remove(target Partition) error {
 	return fmt.Errorf("the given partition was not found")
 }
 
-func (p *partitionList) Swap(old, new Partition) error {
+func (p *partitionList) Swap(old, new partition) error {
 	if p.Size() <= 0 {
 		return fmt.Errorf("empty partition")
 	}
@@ -158,7 +158,7 @@ func (p *partitionList) Swap(old, new Partition) error {
 	return fmt.Errorf("the given partition was not found")
 }
 
-func samePartitions(x, y Partition) bool {
+func samePartitions(x, y partition) bool {
 	// TODO: Use ULID for identifier of partition
 	return x.MinTimestamp() == y.MinTimestamp()
 }
@@ -192,16 +192,16 @@ func (p *partitionList) setTail(node *partitionNode) {
 	p.tail = node
 }
 
-// partitionNode wraps a Partition to hold the pointer to the next one.
+// partitionNode wraps a partition to hold the pointer to the next one.
 type partitionNode struct {
 	// val is immutable
-	val  Partition
+	val  partition
 	next *partitionNode
 	mu   sync.RWMutex
 }
 
-// value gives back the actual Partition of the node.
-func (p *partitionNode) value() Partition {
+// value gives back the actual partition of the node.
+func (p *partitionNode) value() partition {
 	return p.val
 }
 
@@ -230,7 +230,7 @@ func (i *partitionIteratorImpl) Next() bool {
 	return i.current != nil
 }
 
-func (i *partitionIteratorImpl) Value() (Partition, error) {
+func (i *partitionIteratorImpl) Value() (partition, error) {
 	if i.current == nil {
 		return nil, fmt.Errorf("partition not found")
 	}

@@ -1,6 +1,6 @@
 package tstorage
 
-// Partition is a chunk of time-series data with the timestamp range.
+// partition is a chunk of time-series data with the timestamp range.
 // A partition acts as a fully independent database containing all data
 // points for its time range.
 //
@@ -10,7 +10,7 @@ package tstorage
 // *ReadOnly*:
 //   it can't be written. Partitions will be ReadOnly if it exceeds the partition range.
 // FIXME: Make private all internal structs/interface
-type Partition interface {
+type partition interface {
 	// Write operations
 	//
 	// InsertRows is a goroutine safe way to insert data points into itself.
@@ -33,7 +33,7 @@ type Partition interface {
 }
 
 type MemoryPartition interface {
-	Partition
+	partition
 	ReadyToBePersisted() bool
 }
 
