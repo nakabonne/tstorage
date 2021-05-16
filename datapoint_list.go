@@ -119,7 +119,7 @@ func (l *dataPointListImpl) newIterator() DataPointIterator {
 	dummy := &dataPointNode{
 		next: head,
 	}
-	return &dataPointIterator{
+	return &dataPointIteratorImpl{
 		current: dummy,
 	}
 }
@@ -186,11 +186,11 @@ func (n *dataPointNode) getPrev() *dataPointNode {
 	return n.prev
 }
 
-type dataPointIterator struct {
+type dataPointIteratorImpl struct {
 	current *dataPointNode
 }
 
-func (i *dataPointIterator) Next() bool {
+func (i *dataPointIteratorImpl) Next() bool {
 	if i.current == nil {
 		return false
 	}
@@ -199,13 +199,13 @@ func (i *dataPointIterator) Next() bool {
 	return i.current != nil
 }
 
-func (i *dataPointIterator) Value() *DataPoint {
+func (i *dataPointIteratorImpl) Value() *DataPoint {
 	if i.current == nil {
 		return nil
 	}
 	return i.current.value()
 }
 
-func (i *dataPointIterator) node() *dataPointNode {
+func (i *dataPointIteratorImpl) node() *dataPointNode {
 	return i.current
 }
