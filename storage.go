@@ -102,7 +102,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 	}
 
 	if s.inMemoryMode() {
-		s.partitionList.Insert(NewMemoryPartition(nil, s.partitionDuration))
+		s.partitionList.Insert(newMemoryPartition(nil, s.partitionDuration))
 		return s, nil
 	}
 
@@ -115,7 +115,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 		return nil, fmt.Errorf("failed to open data directory: %w", err)
 	}
 	if len(files) == 0 {
-		s.partitionList.Insert(NewMemoryPartition(s.wal, s.partitionDuration))
+		s.partitionList.Insert(newMemoryPartition(s.wal, s.partitionDuration))
 		return s, nil
 	}
 
@@ -141,7 +141,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 	for _, p := range partitions {
 		s.partitionList.Insert(p)
 	}
-	s.partitionList.Insert(NewMemoryPartition(s.wal, s.partitionDuration))
+	s.partitionList.Insert(newMemoryPartition(s.wal, s.partitionDuration))
 
 	return s, nil
 }
@@ -203,7 +203,7 @@ func (s *storage) getPartition() partition {
 
 	// All partitions seems to be unavailable so add a new partition to the list.
 
-	p := NewMemoryPartition(s.wal, s.partitionDuration)
+	p := newMemoryPartition(s.wal, s.partitionDuration)
 	s.partitionList.Insert(p)
 	return p
 }

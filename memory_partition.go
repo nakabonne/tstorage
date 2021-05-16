@@ -9,7 +9,7 @@ import (
 
 var _ inMemoryPartition = &memoryPartition{}
 
-// See NewMemoryPartition for details.
+// memoryPartition implements a partition to store on the process memory.
 type memoryPartition struct {
 	// A hash map from metric-name to metric.
 	metrics sync.Map
@@ -24,8 +24,7 @@ type memoryPartition struct {
 	maxTimestamp int64
 }
 
-// NewMemoryPartition generates a partition to store on the process memory.
-func NewMemoryPartition(wal wal, partitionDuration time.Duration) partition {
+func newMemoryPartition(wal wal, partitionDuration time.Duration) partition {
 	return &memoryPartition{
 		partitionDuration: partitionDuration.Milliseconds(),
 		wal:               wal,

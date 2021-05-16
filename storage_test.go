@@ -29,7 +29,7 @@ func Test_storage_SelectRows(t *testing.T) {
 			start: 0,
 			end:   4,
 			storage: func() storage {
-				part1 := NewMemoryPartition(nil, 1*time.Hour)
+				part1 := newMemoryPartition(nil, 1*time.Hour)
 				err := part1.InsertRows([]Row{
 					{
 						DataPoint: DataPoint{Timestamp: 1},
@@ -93,7 +93,7 @@ func Test_storage_SelectRows(t *testing.T) {
 			start: 0,
 			end:   10,
 			storage: func() storage {
-				part1 := NewMemoryPartition(nil, 1*time.Hour)
+				part1 := newMemoryPartition(nil, 1*time.Hour)
 				err := part1.InsertRows([]Row{
 					{
 						DataPoint: DataPoint{Timestamp: 1},
@@ -126,7 +126,7 @@ func Test_storage_SelectRows(t *testing.T) {
 				if err != nil {
 					panic(err)
 				}
-				part2 := NewMemoryPartition(nil, 1*time.Hour)
+				part2 := newMemoryPartition(nil, 1*time.Hour)
 				err = part2.InsertRows([]Row{
 					{
 						DataPoint: DataPoint{Timestamp: 4},
@@ -159,7 +159,7 @@ func Test_storage_SelectRows(t *testing.T) {
 				if err != nil {
 					panic(err)
 				}
-				part3 := NewMemoryPartition(nil, 1*time.Hour)
+				part3 := newMemoryPartition(nil, 1*time.Hour)
 				err = part3.InsertRows([]Row{
 					{
 						DataPoint: DataPoint{Timestamp: 7},
