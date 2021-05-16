@@ -47,7 +47,7 @@ type Reader interface {
 	// Typically the given iterator can be used to iterate over the data points, like:
 	/*
 		iterator, _, _ := storage.SelectRows(labels, 1600000, 1600001)
-		for iterator.Next() {
+		for iterator.next() {
 			fmt.Printf("value: %v\n", iterator.Value())
 		}
 	*/
@@ -230,7 +230,7 @@ func (s *storage) SelectRows(labels []Label, start, end int64) (DataPointIterato
 
 	// Iterate over all partitions from the newest one.
 	iterator := s.partitionList.newIterator()
-	for iterator.Next() {
+	for iterator.next() {
 		part, err := iterator.Value()
 		if err != nil {
 			return nil, 0, fmt.Errorf("invalid partition found: %w", err)
@@ -255,7 +255,7 @@ func (s *storage) SelectRows(labels []Label, start, end int64) (DataPointIterato
 
 func (s *storage) FlushRows() error {
 	iterator := s.partitionList.newIterator()
-	for iterator.Next() {
+	for iterator.next() {
 		part, err := iterator.Value()
 		if err != nil {
 			return fmt.Errorf("invalid partition found: %w", err)

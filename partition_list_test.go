@@ -415,7 +415,7 @@ func Test_partitionList_Swap(t *testing.T) {
 				// Check if the partition list is as same as we'd like
 				iterator := tt.partitionListImpl.newIterator()
 				partitons := make([]partition, 0, tt.partitionListImpl.size())
-				for iterator.Next() {
+				for iterator.next() {
 					v, err := iterator.Value()
 					assert.NoError(t, err)
 					partitons = append(partitons, v)

@@ -31,16 +31,16 @@ type partitionList interface {
 
 // Iterator represents an iterator for partition list. The basic usage is:
 /*
-  for iterator.Next() {
+  for iterator.next() {
     partition, err := iterator.Value()
     // Do something with partition
   }
 */
 type partitionIterator interface {
-	// Next positions the iterator at the next node in the list.
+	// next positions the iterator at the next node in the list.
 	// It will be positioned at the head on the first call.
 	// The return value will be true if a value can be read from the list.
-	Next() bool
+	next() bool
 	// Value gives back the current partition in the iterator.
 	Value() (partition, error)
 
@@ -87,7 +87,7 @@ func (p *partitionListImpl) remove(target partition) error {
 	// Iterate over itself from the head.
 	var prev, next *partitionNode
 	iterator := p.newIterator()
-	for iterator.Next() {
+	for iterator.next() {
 		current := iterator.currentNode()
 		if !samePartitions(current.value(), target) {
 			prev = current
@@ -96,7 +96,7 @@ func (p *partitionListImpl) remove(target partition) error {
 
 		// remove the current node.
 
-		iterator.Next()
+		iterator.next()
 		next = iterator.currentNode()
 		switch {
 		case prev == nil:
@@ -125,7 +125,7 @@ func (p *partitionListImpl) swap(old, new partition) error {
 	// Iterate over itself from the head.
 	var prev, next *partitionNode
 	iterator := p.newIterator()
-	for iterator.Next() {
+	for iterator.next() {
 		current := iterator.currentNode()
 		if !samePartitions(current.value(), old) {
 			prev = current
@@ -138,7 +138,7 @@ func (p *partitionListImpl) swap(old, new partition) error {
 			val:  new,
 			next: current.next,
 		}
-		iterator.Next()
+		iterator.next()
 		next = iterator.currentNode()
 		switch {
 		case prev == nil:
@@ -171,7 +171,7 @@ func (p *partitionListImpl) newIterator() partitionIterator {
 	p.mu.RLock()
 	head := p.head
 	p.mu.RUnlock()
-	// Put a dummy node so that it positions the head on the first Next() call.
+	// Put a dummy node so that it positions the head on the first next() call.
 	dummy := &partitionNode{
 		next: head,
 	}
@@ -221,7 +221,7 @@ type partitionIteratorImpl struct {
 	current *partitionNode
 }
 
-func (i *partitionIteratorImpl) Next() bool {
+func (i *partitionIteratorImpl) next() bool {
 	if i.current == nil {
 		return false
 	}
