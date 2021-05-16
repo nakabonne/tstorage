@@ -76,7 +76,7 @@ func (m *memoryPartition) InsertRows(rows []Row) error {
 }
 
 // SelectRows gives back the certain data points within the given range.
-func (m *memoryPartition) SelectRows(metricName string, start, end int64) []DataPoint {
+func (m *memoryPartition) SelectRows(metricName string, start, end int64) DataPointIterator {
 	mt := m.getMetric(metricName)
 	return mt.selectPoints(start, end)
 }
@@ -87,9 +87,8 @@ func (m *memoryPartition) getMetric(name string) *metric {
 	value, ok := m.metrics.Load(name)
 	if !ok {
 		value = &metric{
-			name:      name,
-			points:    make([]DataPoint, 0),
-			lastIndex: -1,
+			name:   name,
+			points: newDataPointList(nil, nil),
 		}
 		m.metrics.Store(name, value)
 	}
@@ -108,7 +107,9 @@ func (m *memoryPartition) SelectAll() []Row {
 			return false
 		}
 		labels := UnmarshalMetricName(k)
-		for _, point := range mt.points {
+		iterator := mt.points.newIterator()
+		for iterator.Next() {
+			point := iterator.Value()
 			rows = append(rows, Row{
 				Labels: labels,
 				DataPoint: DataPoint{
@@ -144,55 +145,37 @@ func (m *memoryPartition) ReadyToBePersisted() bool {
 
 // metric has a list of data points that belong to the metric
 type metric struct {
-	name string
-	// FIXME: Use linked list instead of slice
-	points []DataPoint
+	name   string
+	points dataPointList
 	mu     sync.RWMutex
-
-	// Use this to arrange points in ascending order.
-	lastIndex int
 }
 
 func (m *metric) insertPoint(point *DataPoint) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	defer func() { m.lastIndex++ }() // TODO: Carefully check how it goes
-
-	if m.lastIndex < 0 {
-		m.points = append(m.points, *point)
-		return
-	}
-	if m.points[m.lastIndex].Timestamp < point.Timestamp {
-		m.points = append(m.points, *point)
-		return
-	}
-
-	// Apparently the given data point has to be inserted in the middle.
-
-	var i int
-	for i = m.lastIndex; m.points[i].Timestamp < point.Timestamp; i-- {
-	}
-	// Start insertion into the certain point.
-	//
-	// 1, Resize: say new point is 2, and current slice is [1,3], then [1,3] => [1,3,2]
-	m.points = append(m.points, *point)
-	// 2, Shift points one by one: e.g. [1,3,2] => [1,3,3]
-	copy(m.points[i+1:], m.points[i:])
-	// 3, Insert into the certain place.
-	m.points[i] = *point
+	m.points.insert(point)
 }
 
-func (m *metric) selectPoints(start, end int64) []DataPoint {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	points := make([]DataPoint, 0)
-	for _, p := range m.points {
-		if p.Timestamp > end {
-			break
+func (m *metric) selectPoints(start, end int64) DataPointIterator {
+	// Just take the head and the tail.
+	var head *dataPointNode
+	iterator := m.points.newIterator()
+	for iterator.Next() {
+		current := iterator.node()
+		if current.value().Timestamp < start {
+			continue
 		}
-		if p.Timestamp > start {
-			points = append(points, p)
-		}
+		head = current
+		break
 	}
-	return points
+
+	var tail *dataPointNode
+	prev := head
+	for iterator.Next() {
+		current := iterator.node()
+		if current.value().Timestamp > end {
+			tail = prev
+		}
+		prev = current
+	}
+	l := newDataPointList(head, tail)
+	return l.newIterator()
 }

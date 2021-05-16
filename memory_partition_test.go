@@ -16,9 +16,8 @@ func Test_metric_insertPoint(t *testing.T) {
 		{
 			name: "the first insertion",
 			metric: metric{
-				name:      "metric-a",
-				points:    []DataPoint{},
-				lastIndex: -1,
+				name:   "metric-a",
+				points: []DataPoint{},
 			},
 			point: &DataPoint{
 				Timestamp: 1,
@@ -43,7 +42,6 @@ func Test_metric_insertPoint(t *testing.T) {
 						Timestamp: 3,
 					},
 				},
-				lastIndex: 1,
 			},
 			point: &DataPoint{
 				Timestamp: 2,
@@ -72,7 +70,6 @@ func Test_metric_insertPoint(t *testing.T) {
 						Timestamp: 2,
 					},
 				},
-				lastIndex: 1,
 			},
 			point: &DataPoint{
 				Timestamp: 3,
@@ -116,7 +113,6 @@ func TestSelectAll(t *testing.T) {
 							Value:     0.1,
 						},
 					},
-					lastIndex: 0,
 				})
 				return m
 			}(),
@@ -146,7 +142,6 @@ func TestSelectAll(t *testing.T) {
 							Value:     0.2,
 						},
 					},
-					lastIndex: 1,
 				})
 				m.metrics.Store("metric2", &metric{
 					name: "metric2",
@@ -160,7 +155,6 @@ func TestSelectAll(t *testing.T) {
 							Value:     0.2,
 						},
 					},
-					lastIndex: 1,
 				})
 				return m
 			}(),

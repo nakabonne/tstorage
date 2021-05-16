@@ -1,7 +1,6 @@
 package tstorage
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 )
@@ -35,7 +34,11 @@ type DataPointIterator interface {
 	// The return value will be true if a value can be read from the list.
 	Next() bool
 	// Value gives back the current dataPoint in the iterator.
-	Value() (*DataPoint, error)
+	// Don't call for nil node.
+	Value() *DataPoint
+
+	// node gives back the current node itself.
+	node() *dataPointNode
 }
 
 type dataPointListImpl struct {
@@ -45,8 +48,12 @@ type dataPointListImpl struct {
 	mu        sync.RWMutex
 }
 
-func newDataPointList() dataPointList {
-	return &dataPointListImpl{}
+// newDataPointList optionally accepts the initial head and tail nodes.
+func newDataPointList(head, tail *dataPointNode) dataPointList {
+	return &dataPointListImpl{
+		head: head,
+		tail: tail,
+	}
 }
 
 func (l *dataPointListImpl) insert(point *DataPoint) {
@@ -153,9 +160,13 @@ func (i *dataPointIterator) Next() bool {
 	return i.current != nil
 }
 
-func (i *dataPointIterator) Value() (*DataPoint, error) {
+func (i *dataPointIterator) Value() *DataPoint {
 	if i.current == nil {
-		return nil, fmt.Errorf("dataPoint not found")
+		return nil
 	}
-	return i.current.value(), nil
+	return i.current.value()
+}
+
+func (i *dataPointIterator) node() *dataPointNode {
+	return i.current
 }
