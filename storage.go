@@ -36,7 +36,7 @@ type Storage interface {
 	Reader
 	Writer
 	// FlushRows persists all in-memory partitions ready to persisted.
-	// TODO: Maybe it should be done within this package
+	// FIXME: Maybe it should be done within this package
 	FlushRows() error
 }
 
@@ -51,6 +51,7 @@ type Reader interface {
 			fmt.Printf("value: %v\n", iterator.value())
 		}
 	*/
+	// FIXME: Use metricName, not only labels
 	SelectRows(labels []Label, start, end int64) (iterator DataPointIterator, size int, err error)
 }
 
@@ -62,11 +63,13 @@ type Writer interface {
 	Wait()
 }
 
+// Row comes with properties to identify a kind of metrics.
 type Row struct {
 	DataPoint
 	Labels []Label
 }
 
+// DataPoint represents a data point, the smallest unit of time series data.
 type DataPoint struct {
 	// Unix timestamp
 	Timestamp int64
@@ -75,6 +78,8 @@ type DataPoint struct {
 
 type Option func(*storage)
 
+// WithDataPath specifies the path to directory that stores time-series data.
+// Use this to make time-series data persistent on disk.
 func WithDataPath(dataPath string) Option {
 	return func(s *storage) {
 		s.dataPath = dataPath

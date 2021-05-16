@@ -7,7 +7,6 @@ import (
 )
 
 // Label is a time-series label.
-// A label without name means "__name__".
 type Label struct {
 	Name  string
 	Value string
