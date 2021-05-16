@@ -155,8 +155,9 @@ func (m *metric) insertPoint(point *DataPoint) {
 	m.points.insert(point)
 }
 
+// selectPoints returns a new dataPointList. It just takes head and tail out and sets them to the new one.
 func (m *metric) selectPoints(start, end int64) dataPointList {
-	// Just take the head and the tail.
+	// Position the iterator at the node to be head.
 	var head *dataPointNode
 	iterator := m.points.newIterator()
 	for iterator.Next() {
@@ -168,17 +169,19 @@ func (m *metric) selectPoints(start, end int64) dataPointList {
 		break
 	}
 
+	// Position the iterator at the node to be tail.
 	var tail *dataPointNode
 	var num int64 = 1
 	prev := head
 	for iterator.Next() {
 		num++
 		current := iterator.node()
-		if current.value().Timestamp > end {
-			tail = prev
-			break
+		if current.value().Timestamp < end {
+			prev = current
+			continue
 		}
-		prev = current
+		tail = prev
+		break
 	}
 	return newDataPointList(head, tail, num)
 }
