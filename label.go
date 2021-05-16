@@ -19,7 +19,7 @@ const (
 )
 
 // Label is a time-series label.
-// A label with missing value is invalid.
+// A label with missing name or value is invalid.
 type Label struct {
 	Name  string
 	Value string
@@ -30,6 +30,9 @@ func marshalMetricName(metric string, labels []Label) string {
 	if len(labels) == 0 {
 		return metric
 	}
+	invalid := func(name, value string) bool {
+		return name == "" || value == ""
+	}
 
 	// Determine the bytes size in advance.
 	size := len(metric) + 2
@@ -38,7 +41,7 @@ func marshalMetricName(metric string, labels []Label) string {
 	})
 	for i := range labels {
 		label := &labels[i]
-		if len(label.Value) == 0 {
+		if invalid(label.Name, label.Value) {
 			continue
 		}
 		if len(label.Name) > maxLabelNameLen {
@@ -58,7 +61,7 @@ func marshalMetricName(metric string, labels []Label) string {
 	out = append(out, metric...)
 	for i := range labels {
 		label := &labels[i]
-		if len(label.Value) == 0 {
+		if invalid(label.Name, label.Value) {
 			continue
 		}
 		out = encoding.MarshalUint16(out, uint16(len(label.Name)))

@@ -19,6 +19,28 @@ func TestMarshalMetricName(t *testing.T) {
 			want:   "metric1",
 		},
 		{
+			name:   "missing label name",
+			metric: "metric1",
+			labels: []Label{
+				{
+					Value: "value1",
+				},
+			},
+
+			want: "\x00\ametric1",
+		},
+		{
+			name:   "missing label value",
+			metric: "metric1",
+			labels: []Label{
+				{
+					Name: "metric1",
+				},
+			},
+
+			want: "\x00\ametric1",
+		},
+		{
 			name:   "metric with a single label",
 			metric: "metric1",
 			labels: []Label{
