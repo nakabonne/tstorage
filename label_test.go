@@ -25,7 +25,7 @@ func TestMarshalMetricName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := MarshalMetricName(tt.labels)
+			got := marshalMetricName(tt.labels)
 			assert.Equal(t, tt.want, got)
 		})
 	}

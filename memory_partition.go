@@ -58,7 +58,7 @@ func (m *memoryPartition) InsertRows(rows []Row) error {
 		if row.Timestamp > maxTimestamp {
 			maxTimestamp = row.Timestamp
 		}
-		name := MarshalMetricName(row.Labels)
+		name := marshalMetricName(row.Labels)
 		mt := m.getMetric(name)
 		mt.insertPoint(&row.DataPoint)
 		rowsNum++
@@ -78,7 +78,7 @@ func (m *memoryPartition) InsertRows(rows []Row) error {
 
 // SelectRows gives back the certain data points within the given range.
 func (m *memoryPartition) SelectRows(labels []Label, start, end int64) dataPointList {
-	name := MarshalMetricName(labels)
+	name := marshalMetricName(labels)
 	mt := m.getMetric(name)
 	return mt.selectPoints(start, end)
 }

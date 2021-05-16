@@ -25,8 +25,8 @@ const (
 	maxLabelValueLen = 16 * 1024
 )
 
-// MarshalMetricName builds a unique bytes by encoding labels.
-func MarshalMetricName(labels []Label) string {
+// marshalMetricName builds a unique bytes by encoding labels.
+func marshalMetricName(labels []Label) string {
 	// Determine the bytes size in advance.
 	size := 0
 	sort.Slice(labels, func(i, j int) bool {
