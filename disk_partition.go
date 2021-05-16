@@ -67,9 +67,9 @@ func newDiskPartition(dirPath string, rows []Row, minTimestamp, maxTimestamp int
 	}, nil
 }
 
-// OpenDiskPartition generates a disk partition from the existent files.
+// openDiskPartition generates a disk partition from the existent files.
 // If the given dir doesn't exist, use newDiskPartition instead.
-func OpenDiskPartition(dirPath string) (partition, error) {
+func openDiskPartition(dirPath string) (partition, error) {
 	if dirPath == "" {
 		return nil, fmt.Errorf("dir path is required")
 	}

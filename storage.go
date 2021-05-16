@@ -140,7 +140,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 			continue
 		}
 		path := filepath.Join(s.dataPath, f.Name())
-		part, err := OpenDiskPartition(path)
+		part, err := openDiskPartition(path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open disk partition for %s: %w", path, err)
 		}

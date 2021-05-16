@@ -9,7 +9,6 @@ package tstorage
 //   it can be written. Only one partition can be writable within a partition list.
 // *ReadOnly*:
 //   it can't be written. Partitions will be ReadOnly if it exceeds the partition range.
-// FIXME: Make private all internal structs/interface
 type partition interface {
 	// Write operations
 	//

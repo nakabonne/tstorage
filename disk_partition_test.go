@@ -31,7 +31,7 @@ func TestOpenDiskPartition(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := OpenDiskPartition(tt.dirPath)
+			got, err := openDiskPartition(tt.dirPath)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.want, got)
 		})
