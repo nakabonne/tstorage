@@ -36,14 +36,3 @@ type inMemoryPartition interface {
 	partition
 	ReadyToBePersisted() bool
 }
-
-type Row struct {
-	DataPoint
-	Labels []Label
-}
-
-type DataPoint struct {
-	// Unix timestamp in milliseconds
-	Timestamp int64
-	Value     float64
-}

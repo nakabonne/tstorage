@@ -62,6 +62,17 @@ type Writer interface {
 	Wait()
 }
 
+type Row struct {
+	DataPoint
+	Labels []Label
+}
+
+type DataPoint struct {
+	// Unix timestamp
+	Timestamp int64
+	Value     float64
+}
+
 type Option func(*storage)
 
 func WithDataPath(dataPath string) Option {
