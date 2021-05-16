@@ -1,6 +1,6 @@
 package tstorage
 
-var _ MemoryPartition = &redisPartition{}
+var _ inMemoryPartition = &redisPartition{}
 
 type redisPartition struct {
 }

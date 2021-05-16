@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var _ MemoryPartition = &memoryPartition{}
+var _ inMemoryPartition = &memoryPartition{}
 
 // See NewMemoryPartition for details.
 type memoryPartition struct {

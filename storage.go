@@ -249,7 +249,7 @@ func (s *storage) FlushRows() error {
 		if err != nil {
 			return fmt.Errorf("invalid partition found: %w", err)
 		}
-		if p, ok := part.(MemoryPartition); !ok || !p.ReadyToBePersisted() {
+		if p, ok := part.(inMemoryPartition); !ok || !p.ReadyToBePersisted() {
 			continue
 		}
 

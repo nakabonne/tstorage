@@ -32,7 +32,7 @@ type partition interface {
 	ReadOnly() bool
 }
 
-type MemoryPartition interface {
+type inMemoryPartition interface {
 	partition
 	ReadyToBePersisted() bool
 }
