@@ -76,7 +76,12 @@ func Test_memoryPartition_InsertRows(t *testing.T) {
 			err := tt.memoryPartition.InsertRows(tt.rows)
 			assert.Equal(t, tt.wantErr, err != nil)
 
-			list := tt.memoryPartition.SelectRows("\x00\b__name__\x00\ametric1", 0, 4)
+			list := tt.memoryPartition.SelectRows([]Label{
+				{
+					Name:  "__name__",
+					Value: "metric1",
+				},
+			}, 0, 4)
 			iterator := list.newIterator()
 			got := []DataPoint{}
 			for iterator.Next() {
@@ -90,25 +95,35 @@ func Test_memoryPartition_InsertRows(t *testing.T) {
 func Test_memoryPartition_SelectRows(t *testing.T) {
 	tests := []struct {
 		name            string
-		metricName      string
+		labels          []Label
 		start           int64
 		end             int64
 		memoryPartition memoryPartition
 		want            []DataPoint
 	}{
 		{
-			name:            "given non-exist metric name",
-			metricName:      "unknown",
+			name: "given non-exist metric name",
+			labels: []Label{
+				{
+					Name:  "__name__",
+					Value: "unknow",
+				},
+			},
 			start:           1,
 			end:             2,
 			memoryPartition: memoryPartition{},
 			want:            []DataPoint{},
 		},
 		{
-			name:       "select multiple points",
-			metricName: "\x00\b__name__\x00\ametric1",
-			start:      0,
-			end:        3,
+			name: "select multiple points",
+			labels: []Label{
+				{
+					Name:  "__name__",
+					Value: "metric1",
+				},
+			},
+			start: 0,
+			end:   3,
 			memoryPartition: func() memoryPartition {
 				m := memoryPartition{}
 				m.InsertRows([]Row{
@@ -169,7 +184,7 @@ func Test_memoryPartition_SelectRows(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			list := tt.memoryPartition.SelectRows(tt.metricName, tt.start, tt.end)
+			list := tt.memoryPartition.SelectRows(tt.labels, tt.start, tt.end)
 			iterator := list.newIterator()
 			got := []DataPoint{}
 			for iterator.Next() {

@@ -9,7 +9,7 @@ func (r redisPartition) InsertRows(rows []Row) error {
 	panic("implement me")
 }
 
-func (r redisPartition) SelectRows(metricName string, start, end int64) dataPointList {
+func (r redisPartition) SelectRows(labels []Label, start, end int64) dataPointList {
 	panic("implement me")
 }
 

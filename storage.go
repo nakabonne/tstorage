@@ -31,7 +31,7 @@ const (
 	defaultWriteTimeout      = 30 * time.Second
 )
 
-// Storage provides goroutine safe capabilities of insertion into and retrieval from partitions.
+// Storage provides goroutine safe capabilities of insertion into and retrieval from the time-series storage.
 type Storage interface {
 	Reader
 	Writer
@@ -42,12 +42,21 @@ type Storage interface {
 
 // Reader provides reading access to time series data.
 type Reader interface {
-	// FIXME: Use labels instead of metricname
-	SelectRows(metricName string, start, end int64) (iterator DataPointIterator, size int, err error)
+	// SelectRows gives back an iterator object to traverse data points within the given start-end range.
+	// Keep in mind that start is inclusive, end is exclusive, and both must be Unix timestamp.
+	// Typically the given iterator can be used to iterate over the data points, like:
+	/*
+		iterator, _, _ := storage.SelectRows(labels, 1600000, 1600001)
+		for iterator.Next() {
+			fmt.Printf("value: %v\n", iterator.Value())
+		}
+	*/
+	SelectRows(labels []Label, start, end int64) (iterator DataPointIterator, size int, err error)
 }
 
 // Writer provides writing access to time series data.
 type Writer interface {
+	// InsertRows ingests the given rows to the time-series storage.
 	InsertRows(rows []Row) error
 	// Wait waits until all tasks got done.
 	Wait()
@@ -197,7 +206,13 @@ func (s *storage) getPartition() Partition {
 	return p
 }
 
-func (s *storage) SelectRows(metricName string, start, end int64) (DataPointIterator, int, error) {
+func (s *storage) SelectRows(labels []Label, start, end int64) (DataPointIterator, int, error) {
+	if len(labels) == 0 {
+		return nil, 0, fmt.Errorf("no labels given")
+	}
+	if start >= end {
+		return nil, 0, fmt.Errorf("thg given start is greater than end")
+	}
 	pointLists := make([]dataPointList, 0)
 
 	// Iterate over all partitions from the newest one.
@@ -214,7 +229,7 @@ func (s *storage) SelectRows(metricName string, start, end int64) (DataPointIter
 		if part.MinTimestamp() > end {
 			continue
 		}
-		list := part.SelectRows(metricName, start, end)
+		list := part.SelectRows(labels, start, end)
 		// in order to keep the order in ascending.
 		pointLists = append([]dataPointList{list}, pointLists...)
 	}

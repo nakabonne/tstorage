@@ -9,20 +9,25 @@ import (
 
 func Test_storage_SelectRows(t *testing.T) {
 	tests := []struct {
-		name       string
-		storage    storage
-		metricName string
-		start      int64
-		end        int64
-		want       []DataPoint
-		wantSize   int
-		wantErr    bool
+		name     string
+		storage  storage
+		labels   []Label
+		start    int64
+		end      int64
+		want     []DataPoint
+		wantSize int
+		wantErr  bool
 	}{
 		{
-			name:       "select from single partition",
-			metricName: "\x00\b__name__\x00\ametric1",
-			start:      0,
-			end:        4,
+			name: "select from single partition",
+			labels: []Label{
+				{
+					Name:  "__name__",
+					Value: "metric1",
+				},
+			},
+			start: 0,
+			end:   4,
 			storage: func() storage {
 				part1 := NewMemoryPartition(nil, 1*time.Hour)
 				err := part1.InsertRows([]Row{
@@ -78,10 +83,15 @@ func Test_storage_SelectRows(t *testing.T) {
 			wantSize: 3,
 		},
 		{
-			name:       "select from three partitions",
-			metricName: "\x00\b__name__\x00\ametric1",
-			start:      0,
-			end:        10,
+			name: "select from three partitions",
+			labels: []Label{
+				{
+					Name:  "__name__",
+					Value: "metric1",
+				},
+			},
+			start: 0,
+			end:   10,
 			storage: func() storage {
 				part1 := NewMemoryPartition(nil, 1*time.Hour)
 				err := part1.InsertRows([]Row{
@@ -226,7 +236,7 @@ func Test_storage_SelectRows(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iterator, gotSize, err := tt.storage.SelectRows(tt.metricName, tt.start, tt.end)
+			iterator, gotSize, err := tt.storage.SelectRows(tt.labels, tt.start, tt.end)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.wantSize, gotSize)
 			got := []DataPoint{}

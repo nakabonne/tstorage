@@ -19,8 +19,7 @@ type Partition interface {
 	// Read operations
 	//
 	// SelectRows gives back certain metric's data points within the given range.
-	// FIXME: Use labels instead of metricname
-	SelectRows(metricName string, start, end int64) dataPointList
+	SelectRows(labels []Label, start, end int64) dataPointList
 	// SelectAll gives back all rows of all metrics.
 	SelectAll() []Row
 	// MinTimestamp returns the minimum Unix timestamp in milliseconds.

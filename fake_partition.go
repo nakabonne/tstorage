@@ -9,11 +9,11 @@ type fakePartition struct {
 	err error
 }
 
-func (f *fakePartition) InsertRows(rows []Row) error {
+func (f *fakePartition) InsertRows(_ []Row) error {
 	return f.err
 }
 
-func (f *fakePartition) SelectRows(metricName string, start, end int64) dataPointList {
+func (f *fakePartition) SelectRows(_ []Label, _, _ int64) dataPointList {
 	return nil
 }
 
