@@ -82,8 +82,10 @@ func WithWriteTimeout(timeout time.Duration) Option {
 	}
 }
 
-// NewStorage gives back a new storage along with the initial partition.
-// Give the WithDataPath option for running as a on-disk storage.
+// NewStorage gives back a new storage, which stores time-series data in the process memory by default.
+//
+// Give the WithDataPath option for running as a on-disk storage. Specify a directory with data already exists,
+// then it will be read as the initial data.
 func NewStorage(opts ...Option) (Storage, error) {
 	s := &storage{
 		partitionList:  NewPartitionList(),
