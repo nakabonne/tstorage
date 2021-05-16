@@ -42,7 +42,8 @@ type partitionIterator interface {
 	// The return value will be true if a value can be read from the list.
 	next() bool
 	// value gives back the current partition in the iterator.
-	value() (partition, error)
+	// If it was called even though next() returns false, it will return nil.
+	value() partition
 
 	currentNode() *partitionNode
 }
@@ -230,11 +231,11 @@ func (i *partitionIteratorImpl) next() bool {
 	return i.current != nil
 }
 
-func (i *partitionIteratorImpl) value() (partition, error) {
+func (i *partitionIteratorImpl) value() partition {
 	if i.current == nil {
-		return nil, fmt.Errorf("partition not found")
+		return nil
 	}
-	return i.current.value(), nil
+	return i.current.value()
 }
 
 func (i *partitionIteratorImpl) currentNode() *partitionNode {

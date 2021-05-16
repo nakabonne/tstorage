@@ -231,9 +231,9 @@ func (s *storage) SelectRows(labels []Label, start, end int64) (DataPointIterato
 	// Iterate over all partitions from the newest one.
 	iterator := s.partitionList.newIterator()
 	for iterator.next() {
-		part, err := iterator.value()
-		if err != nil {
-			return nil, 0, fmt.Errorf("invalid partition found: %w", err)
+		part := iterator.value()
+		if part == nil {
+			return nil, 0, fmt.Errorf("unexpected empty partition found")
 		}
 		if part.MaxTimestamp() < start {
 			// No need to keep going anymore
@@ -256,9 +256,9 @@ func (s *storage) SelectRows(labels []Label, start, end int64) (DataPointIterato
 func (s *storage) FlushRows() error {
 	iterator := s.partitionList.newIterator()
 	for iterator.next() {
-		part, err := iterator.value()
-		if err != nil {
-			return fmt.Errorf("invalid partition found: %w", err)
+		part := iterator.value()
+		if part == nil {
+			return fmt.Errorf("unexpected empty partition found")
 		}
 		if p, ok := part.(inMemoryPartition); !ok || !p.ReadyToBePersisted() {
 			continue
