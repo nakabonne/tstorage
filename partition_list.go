@@ -26,7 +26,7 @@ type PartitionList interface {
 	Size() int
 	// NewIterator gives back the iterator object fot this list.
 	// If you need to inspect all nodes within the list, use this one.
-	NewIterator() Iterator
+	NewIterator() partitionIterator
 }
 
 // Iterator represents an iterator for partition list. The basic usage is:
@@ -36,7 +36,7 @@ type PartitionList interface {
     // Do something with partition
   }
 */
-type Iterator interface {
+type partitionIterator interface {
 	// Next positions the iterator at the next node in the list.
 	// It will be positioned at the head on the first call.
 	// The return value will be true if a value can be read from the list.
@@ -167,7 +167,7 @@ func (p *partitionList) Size() int {
 	return int(atomic.LoadInt64(&p.size))
 }
 
-func (p *partitionList) NewIterator() Iterator {
+func (p *partitionList) NewIterator() partitionIterator {
 	p.mu.RLock()
 	head := p.head
 	p.mu.RUnlock()
@@ -175,7 +175,7 @@ func (p *partitionList) NewIterator() Iterator {
 	dummy := &partitionNode{
 		next: head,
 	}
-	return &iterator{
+	return &partitionIteratorImpl{
 		current: dummy,
 	}
 }
@@ -217,11 +217,11 @@ func (p *partitionNode) getNext() *partitionNode {
 	return p.next
 }
 
-type iterator struct {
+type partitionIteratorImpl struct {
 	current *partitionNode
 }
 
-func (i *iterator) Next() bool {
+func (i *partitionIteratorImpl) Next() bool {
 	if i.current == nil {
 		return false
 	}
@@ -230,13 +230,13 @@ func (i *iterator) Next() bool {
 	return i.current != nil
 }
 
-func (i *iterator) Value() (Partition, error) {
+func (i *partitionIteratorImpl) Value() (Partition, error) {
 	if i.current == nil {
 		return nil, fmt.Errorf("partition not found")
 	}
 	return i.current.value(), nil
 }
 
-func (i *iterator) currentNode() *partitionNode {
+func (i *partitionIteratorImpl) currentNode() *partitionNode {
 	return i.current
 }
