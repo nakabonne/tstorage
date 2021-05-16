@@ -99,7 +99,7 @@ func WithWriteTimeout(timeout time.Duration) Option {
 // then it will be read as the initial data.
 func NewStorage(opts ...Option) (Storage, error) {
 	s := &storage{
-		partitionList:  NewPartitionList(),
+		partitionList:  newPartitionList(),
 		workersLimitCh: make(chan struct{}, defaultWorkersLimit),
 	}
 	for _, opt := range opts {

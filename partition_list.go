@@ -54,7 +54,7 @@ type partitionListImpl struct {
 	mu   sync.RWMutex
 }
 
-func NewPartitionList() PartitionList {
+func newPartitionList() PartitionList {
 	return &partitionListImpl{}
 }
 

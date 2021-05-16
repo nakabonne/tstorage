@@ -62,7 +62,7 @@ func Test_storage_SelectRows(t *testing.T) {
 				if err != nil {
 					panic(err)
 				}
-				list := NewPartitionList()
+				list := newPartitionList()
 				list.Insert(part1)
 				return storage{
 					partitionList:  list,
@@ -192,7 +192,7 @@ func Test_storage_SelectRows(t *testing.T) {
 				if err != nil {
 					panic(err)
 				}
-				list := NewPartitionList()
+				list := newPartitionList()
 				list.Insert(part1)
 				list.Insert(part2)
 				list.Insert(part3)
