@@ -76,7 +76,7 @@ func (m *memoryPartition) InsertRows(rows []Row) error {
 }
 
 // SelectRows gives back the certain data points within the given range.
-func (m *memoryPartition) SelectRows(metricName string, start, end int64) DataPointIterator {
+func (m *memoryPartition) SelectRows(metricName string, start, end int64) dataPointList {
 	mt := m.getMetric(metricName)
 	return mt.selectPoints(start, end)
 }
@@ -88,7 +88,7 @@ func (m *memoryPartition) getMetric(name string) *metric {
 	if !ok {
 		value = &metric{
 			name:   name,
-			points: newDataPointList(nil, nil),
+			points: newDataPointList(nil, nil, 0),
 		}
 		m.metrics.Store(name, value)
 	}
@@ -154,7 +154,7 @@ func (m *metric) insertPoint(point *DataPoint) {
 	m.points.insert(point)
 }
 
-func (m *metric) selectPoints(start, end int64) DataPointIterator {
+func (m *metric) selectPoints(start, end int64) dataPointList {
 	// Just take the head and the tail.
 	var head *dataPointNode
 	iterator := m.points.newIterator()
@@ -168,14 +168,16 @@ func (m *metric) selectPoints(start, end int64) DataPointIterator {
 	}
 
 	var tail *dataPointNode
+	var num int64 = 1
 	prev := head
 	for iterator.Next() {
+		num++
 		current := iterator.node()
 		if current.value().Timestamp > end {
 			tail = prev
+			break
 		}
 		prev = current
 	}
-	l := newDataPointList(head, tail)
-	return l.newIterator()
+	return newDataPointList(head, tail, num)
 }

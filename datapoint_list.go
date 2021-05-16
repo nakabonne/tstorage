@@ -49,10 +49,11 @@ type dataPointListImpl struct {
 }
 
 // newDataPointList optionally accepts the initial head and tail nodes.
-func newDataPointList(head, tail *dataPointNode) dataPointList {
+func newDataPointList(head, tail *dataPointNode, size int64) dataPointList {
 	return &dataPointListImpl{
-		head: head,
-		tail: tail,
+		head:      head,
+		tail:      tail,
+		numPoints: size,
 	}
 }
 
