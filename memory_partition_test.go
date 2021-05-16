@@ -122,7 +122,7 @@ func TestSelectAll(t *testing.T) {
 			}(),
 			want: []Row{
 				{
-					MetricName: "metric1",
+					//MetricName: "metric1",
 					DataPoint: DataPoint{
 						Timestamp: 1,
 						Value:     0.1,
@@ -166,28 +166,28 @@ func TestSelectAll(t *testing.T) {
 			}(),
 			want: []Row{
 				{
-					MetricName: "metric1",
+					//MetricName: "metric1",
 					DataPoint: DataPoint{
 						Timestamp: 1,
 						Value:     0.1,
 					},
 				},
 				{
-					MetricName: "metric1",
+					//MetricName: "metric1",
 					DataPoint: DataPoint{
 						Timestamp: 2,
 						Value:     0.2,
 					},
 				},
 				{
-					MetricName: "metric2",
+					//MetricName: "metric2",
 					DataPoint: DataPoint{
 						Timestamp: 1,
 						Value:     0.1,
 					},
 				},
 				{
-					MetricName: "metric2",
+					//MetricName: "metric2",
 					DataPoint: DataPoint{
 						Timestamp: 2,
 						Value:     0.2,

@@ -9,8 +9,8 @@ import (
 // Label is a time-series label.
 // A label without name means "__name__".
 type Label struct {
-	Name  []byte
-	Value []byte
+	Name  string
+	Value string
 }
 
 const (
@@ -30,7 +30,7 @@ func MarshalMetricName(labels []Label) string {
 	// Determine the bytes size in advance.
 	size := 0
 	sort.Slice(labels, func(i, j int) bool {
-		return string(labels[i].Name) < string(labels[j].Name)
+		return labels[i].Name < labels[j].Name
 	})
 	for i := range labels {
 		label := &labels[i]
@@ -42,9 +42,6 @@ func MarshalMetricName(labels []Label) string {
 		}
 		if len(label.Value) > maxLabelValueLen {
 			label.Value = label.Value[:maxLabelValueLen]
-		}
-		if string(label.Name) == "__name__" {
-			label.Name = label.Name[:0]
 		}
 		size += len(label.Name)
 		size += len(label.Value)
@@ -66,6 +63,7 @@ func MarshalMetricName(labels []Label) string {
 }
 
 // FIXME: Enable to build labels using metricName
+// Or, think about another way to flush in-memory data to disk
 func UnmarshalMetricName(metricName string) []Label {
 	return nil
 }

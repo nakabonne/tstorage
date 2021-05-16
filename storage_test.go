@@ -15,6 +15,7 @@ func Test_storage_SelectRows(t *testing.T) {
 		start      int64
 		end        int64
 		want       []DataPoint
+		wantErr    bool
 	}{
 		{
 			name: "select from three partitions",
@@ -22,16 +23,31 @@ func Test_storage_SelectRows(t *testing.T) {
 				part1 := NewMemoryPartition(nil, 1*time.Hour)
 				err := part1.InsertRows([]Row{
 					{
-						MetricName: "metric1",
-						DataPoint:  DataPoint{Timestamp: 1},
+						DataPoint: DataPoint{Timestamp: 1},
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
 					},
 					{
-						MetricName: "metric1",
-						DataPoint:  DataPoint{Timestamp: 2},
+						DataPoint: DataPoint{Timestamp: 2},
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
 					},
 					{
-						MetricName: "metric1",
-						DataPoint:  DataPoint{Timestamp: 3},
+						DataPoint: DataPoint{Timestamp: 3},
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
 					},
 				})
 				if err != nil {
@@ -40,16 +56,31 @@ func Test_storage_SelectRows(t *testing.T) {
 				part2 := NewMemoryPartition(nil, 1*time.Hour)
 				err = part2.InsertRows([]Row{
 					{
-						MetricName: "metric1",
-						DataPoint:  DataPoint{Timestamp: 4},
+						DataPoint: DataPoint{Timestamp: 4},
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
 					},
 					{
-						MetricName: "metric1",
-						DataPoint:  DataPoint{Timestamp: 5},
+						DataPoint: DataPoint{Timestamp: 5},
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
 					},
 					{
-						MetricName: "metric1",
-						DataPoint:  DataPoint{Timestamp: 6},
+						DataPoint: DataPoint{Timestamp: 6},
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
 					},
 				})
 				if err != nil {
@@ -58,16 +89,31 @@ func Test_storage_SelectRows(t *testing.T) {
 				part3 := NewMemoryPartition(nil, 1*time.Hour)
 				err = part3.InsertRows([]Row{
 					{
-						MetricName: "metric1",
-						DataPoint:  DataPoint{Timestamp: 7},
+						DataPoint: DataPoint{Timestamp: 7},
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
 					},
 					{
-						MetricName: "metric1",
-						DataPoint:  DataPoint{Timestamp: 8},
+						DataPoint: DataPoint{Timestamp: 8},
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
 					},
 					{
-						MetricName: "metric1",
-						DataPoint:  DataPoint{Timestamp: 9},
+						DataPoint: DataPoint{Timestamp: 9},
+						Labels: []Label{
+							{
+								Name:  "__name__",
+								Value: "metric1",
+							},
+						},
 					},
 				})
 				if err != nil {
@@ -83,7 +129,7 @@ func Test_storage_SelectRows(t *testing.T) {
 					workersLimitCh: make(chan struct{}, defaultWorkersLimit),
 				}
 			}(),
-			metricName: "metric1",
+			metricName: "\x00\b__name__\x00\ametric1",
 			start:      0,
 			end:        10,
 			want: []DataPoint{
@@ -119,7 +165,8 @@ func Test_storage_SelectRows(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.storage.SelectRows(tt.metricName, tt.start, tt.end)
+			got, err := tt.storage.SelectRows(tt.metricName, tt.start, tt.end)
+			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.want, got)
 		})
 	}

@@ -16,11 +16,11 @@ func TestMarshalMetricName(t *testing.T) {
 			name: "only __name__ label",
 			labels: []Label{
 				{
-					Name:  []byte(""),
-					Value: []byte("metric_a"),
+					Name:  "__name__",
+					Value: "metric1",
 				},
 			},
-			want: "\x00\x00\x00\bmetric_a",
+			want: "\x00\b__name__\x00\ametric1",
 		},
 	}
 	for _, tt := range tests {
