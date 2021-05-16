@@ -107,7 +107,7 @@ func (m *memoryPartition) SelectAll() []Row {
 		if !ok {
 			return false
 		}
-		labels := UnmarshalMetricName(k)
+		labels := unmarshalMetricName(k)
 		iterator := mt.points.newIterator()
 		for iterator.Next() {
 			point := iterator.Value()
