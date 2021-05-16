@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 )
 
+const chunksDirName = "chunks"
+
 // See newDiskPartition for details.
 type diskPartition struct {
 	dirPath string
@@ -17,8 +19,6 @@ type diskPartition struct {
 	minTimestamp int64
 	maxTimestamp int64
 }
-
-const chunksDirName = "chunks"
 
 // newDiskPartition generates a disk partition from the given data.
 // If any data exist under the given dirPath, it overrides data with the given initial data.
