@@ -32,7 +32,7 @@ type partitionList interface {
 // Iterator represents an iterator for partition list. The basic usage is:
 /*
   for iterator.next() {
-    partition, err := iterator.Value()
+    partition, err := iterator.value()
     // Do something with partition
   }
 */
@@ -41,8 +41,8 @@ type partitionIterator interface {
 	// It will be positioned at the head on the first call.
 	// The return value will be true if a value can be read from the list.
 	next() bool
-	// Value gives back the current partition in the iterator.
-	Value() (partition, error)
+	// value gives back the current partition in the iterator.
+	value() (partition, error)
 
 	currentNode() *partitionNode
 }
@@ -230,7 +230,7 @@ func (i *partitionIteratorImpl) next() bool {
 	return i.current != nil
 }
 
-func (i *partitionIteratorImpl) Value() (partition, error) {
+func (i *partitionIteratorImpl) value() (partition, error) {
 	if i.current == nil {
 		return nil, fmt.Errorf("partition not found")
 	}

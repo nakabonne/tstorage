@@ -211,7 +211,7 @@ func TestSelectAll(t *testing.T) {
 					points: []DataPoint{
 						{
 							Timestamp: 1,
-							Value:     0.1,
+							value:     0.1,
 						},
 					},
 				})
@@ -222,7 +222,7 @@ func TestSelectAll(t *testing.T) {
 					//MetricName: "metric1",
 					DataPoint: DataPoint{
 						Timestamp: 1,
-						Value:     0.1,
+						value:     0.1,
 					},
 				},
 			},
@@ -236,11 +236,11 @@ func TestSelectAll(t *testing.T) {
 					points: []DataPoint{
 						{
 							Timestamp: 1,
-							Value:     0.1,
+							value:     0.1,
 						},
 						{
 							Timestamp: 2,
-							Value:     0.2,
+							value:     0.2,
 						},
 					},
 				})
@@ -249,11 +249,11 @@ func TestSelectAll(t *testing.T) {
 					points: []DataPoint{
 						{
 							Timestamp: 1,
-							Value:     0.1,
+							value:     0.1,
 						},
 						{
 							Timestamp: 2,
-							Value:     0.2,
+							value:     0.2,
 						},
 					},
 				})
@@ -264,28 +264,28 @@ func TestSelectAll(t *testing.T) {
 					//MetricName: "metric1",
 					DataPoint: DataPoint{
 						Timestamp: 1,
-						Value:     0.1,
+						value:     0.1,
 					},
 				},
 				{
 					//MetricName: "metric1",
 					DataPoint: DataPoint{
 						Timestamp: 2,
-						Value:     0.2,
+						value:     0.2,
 					},
 				},
 				{
 					//MetricName: "metric2",
 					DataPoint: DataPoint{
 						Timestamp: 1,
-						Value:     0.1,
+						value:     0.1,
 					},
 				},
 				{
 					//MetricName: "metric2",
 					DataPoint: DataPoint{
 						Timestamp: 2,
-						Value:     0.2,
+						value:     0.2,
 					},
 				},
 			},
