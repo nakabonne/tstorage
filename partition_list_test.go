@@ -35,16 +35,16 @@ func Test_partitionList_Remove(t *testing.T) {
 					next: second,
 				}
 				return partitionListImpl{
-					size: 2,
-					head: first,
-					tail: second,
+					numPartitions: 2,
+					head:          first,
+					tail:          second,
 				}
 			}(),
 			target: &fakePartition{
 				minTimestamp: 1,
 			},
 			wantPartitionList: partitionListImpl{
-				size: 1,
+				numPartitions: 1,
 				head: &partitionNode{
 					val: &fakePartition{
 						minTimestamp: 2,
@@ -73,16 +73,16 @@ func Test_partitionList_Remove(t *testing.T) {
 					next: second,
 				}
 				return partitionListImpl{
-					size: 2,
-					head: first,
-					tail: second,
+					numPartitions: 2,
+					head:          first,
+					tail:          second,
 				}
 			}(),
 			target: &fakePartition{
 				minTimestamp: 2,
 			},
 			wantPartitionList: partitionListImpl{
-				size: 1,
+				numPartitions: 1,
 				head: &partitionNode{
 					val: &fakePartition{
 						minTimestamp: 1,
@@ -116,16 +116,16 @@ func Test_partitionList_Remove(t *testing.T) {
 					next: second,
 				}
 				return partitionListImpl{
-					size: 3,
-					head: first,
-					tail: third,
+					numPartitions: 3,
+					head:          first,
+					tail:          third,
 				}
 			}(),
 			target: &fakePartition{
 				minTimestamp: 2,
 			},
 			wantPartitionList: partitionListImpl{
-				size: 2,
+				numPartitions: 2,
 				head: &partitionNode{
 					val: &fakePartition{
 						minTimestamp: 1,
@@ -159,9 +159,9 @@ func Test_partitionList_Remove(t *testing.T) {
 					next: second,
 				}
 				return partitionListImpl{
-					size: 2,
-					head: first,
-					tail: second,
+					numPartitions: 2,
+					head:          first,
+					tail:          second,
 				}
 			}(),
 			target: &fakePartition{
@@ -181,9 +181,9 @@ func Test_partitionList_Remove(t *testing.T) {
 					next: second,
 				}
 				return partitionListImpl{
-					size: 2,
-					head: first,
-					tail: second,
+					numPartitions: 2,
+					head:          first,
+					tail:          second,
 				}
 			}(),
 			wantErr: true,
@@ -228,9 +228,9 @@ func Test_partitionList_Swap(t *testing.T) {
 					next: second,
 				}
 				return partitionListImpl{
-					size: 2,
-					head: first,
-					tail: second,
+					numPartitions: 2,
+					head:          first,
+					tail:          second,
 				}
 			}(),
 			old: &fakePartition{
@@ -240,7 +240,7 @@ func Test_partitionList_Swap(t *testing.T) {
 				minTimestamp: 100,
 			},
 			wantPartitionList: partitionListImpl{
-				size: 2,
+				numPartitions: 2,
 				head: &partitionNode{
 					val: &fakePartition{
 						minTimestamp: 100,
@@ -274,9 +274,9 @@ func Test_partitionList_Swap(t *testing.T) {
 					next: second,
 				}
 				return partitionListImpl{
-					size: 2,
-					head: first,
-					tail: second,
+					numPartitions: 2,
+					head:          first,
+					tail:          second,
 				}
 			}(),
 			old: &fakePartition{
@@ -286,7 +286,7 @@ func Test_partitionList_Swap(t *testing.T) {
 				minTimestamp: 100,
 			},
 			wantPartitionList: partitionListImpl{
-				size: 2,
+				numPartitions: 2,
 				head: &partitionNode{
 					val: &fakePartition{
 						minTimestamp: 1,
@@ -326,9 +326,9 @@ func Test_partitionList_Swap(t *testing.T) {
 					next: second,
 				}
 				return partitionListImpl{
-					size: 3,
-					head: first,
-					tail: third,
+					numPartitions: 3,
+					head:          first,
+					tail:          third,
 				}
 			}(),
 			old: &fakePartition{
@@ -338,7 +338,7 @@ func Test_partitionList_Swap(t *testing.T) {
 				minTimestamp: 100,
 			},
 			wantPartitionList: partitionListImpl{
-				size: 3,
+				numPartitions: 3,
 				head: &partitionNode{
 					val: &fakePartition{
 						minTimestamp: 1,
@@ -377,16 +377,16 @@ func Test_partitionList_Swap(t *testing.T) {
 					next: second,
 				}
 				return partitionListImpl{
-					size: 2,
-					head: first,
-					tail: second,
+					numPartitions: 2,
+					head:          first,
+					tail:          second,
 				}
 			}(),
 			old: &fakePartition{
 				minTimestamp: 100,
 			},
 			wantPartitionList: partitionListImpl{
-				size: 2,
+				numPartitions: 2,
 				head: &partitionNode{
 					val: &fakePartition{
 						minTimestamp: 1,
@@ -414,7 +414,7 @@ func Test_partitionList_Swap(t *testing.T) {
 			/*
 				// Check if the partition list is as same as we'd like
 				iterator := tt.partitionListImpl.newIterator()
-				partitons := make([]partition, 0, tt.partitionListImpl.Size())
+				partitons := make([]partition, 0, tt.partitionListImpl.size())
 				for iterator.Next() {
 					v, err := iterator.Value()
 					assert.NoError(t, err)

@@ -22,8 +22,8 @@ type PartitionList interface {
 	swap(old, new partition) error
 	// getHead gives back the head node which is the newest one.
 	getHead() partition
-	// size returns the size of itself.
-	Size() int
+	// size returns the number of partitions of itself.
+	size() int
 	// newIterator gives back the iterator object fot this list.
 	// If you need to inspect all nodes within the list, use this one.
 	newIterator() partitionIterator
@@ -48,10 +48,10 @@ type partitionIterator interface {
 }
 
 type partitionListImpl struct {
-	size int64
-	head *partitionNode
-	tail *partitionNode
-	mu   sync.RWMutex
+	numPartitions int64
+	head          *partitionNode
+	tail          *partitionNode
+	mu            sync.RWMutex
 }
 
 func newPartitionList() PartitionList {
@@ -76,11 +76,11 @@ func (p *partitionListImpl) insert(partition partition) {
 	}
 
 	p.setHead(node)
-	atomic.AddInt64(&p.size, 1)
+	atomic.AddInt64(&p.numPartitions, 1)
 }
 
 func (p *partitionListImpl) remove(target partition) error {
-	if p.Size() <= 0 {
+	if p.size() <= 0 {
 		return fmt.Errorf("empty partition")
 	}
 
@@ -110,7 +110,7 @@ func (p *partitionListImpl) remove(target partition) error {
 			// removing the middle node
 			prev.setNext(next)
 		}
-		atomic.AddInt64(&p.size, -1)
+		atomic.AddInt64(&p.numPartitions, -1)
 		return nil
 	}
 
@@ -118,7 +118,7 @@ func (p *partitionListImpl) remove(target partition) error {
 }
 
 func (p *partitionListImpl) swap(old, new partition) error {
-	if p.Size() <= 0 {
+	if p.size() <= 0 {
 		return fmt.Errorf("empty partition")
 	}
 
@@ -163,8 +163,8 @@ func samePartitions(x, y partition) bool {
 	return x.MinTimestamp() == y.MinTimestamp()
 }
 
-func (p *partitionListImpl) Size() int {
-	return int(atomic.LoadInt64(&p.size))
+func (p *partitionListImpl) size() int {
+	return int(atomic.LoadInt64(&p.numPartitions))
 }
 
 func (p *partitionListImpl) newIterator() partitionIterator {
