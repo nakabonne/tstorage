@@ -65,7 +65,7 @@ func Test_memoryPartition_InsertRows(t *testing.T) {
 			iterator := list.newIterator()
 			got := []DataPoint{}
 			for iterator.Next() {
-				got = append(got, *iterator.Value())
+				got = append(got, *iterator.DataPoint())
 			}
 			assert.Equal(t, tt.wantDataPoints, got)
 		})
@@ -144,7 +144,7 @@ func Test_memoryPartition_SelectRows(t *testing.T) {
 			iterator := list.newIterator()
 			got := []DataPoint{}
 			for iterator.Next() {
-				got = append(got, *iterator.Value())
+				got = append(got, *iterator.DataPoint())
 			}
 			assert.Equal(t, tt.want, got)
 		})

@@ -26,7 +26,7 @@ func main() {
 	})
 	iterator, _, _ := storage.SelectRows("metric1", nil, 1600000, 1600001)
 	for iterator.Next() {
-		fmt.Printf("timestamp: %v, value: %v\n", iterator.Value().Timestamp, iterator.Value().Value)
+		fmt.Printf("timestamp: %v, value: %v\n", iterator.DataPoint().Timestamp, iterator.DataPoint().Value)
 		// => timestamp: 1600000, value: 0.1
 	}
 }

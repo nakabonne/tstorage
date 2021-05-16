@@ -113,7 +113,7 @@ func (m *memoryPartition) SelectAll() []Row {
 		labels := unmarshalMetricName(k)
 		iterator := mt.points.newIterator()
 		for iterator.Next() {
-			point := iterator.Value()
+			point := iterator.DataPoint()
 			rows = append(rows, Row{
 				Labels: labels,
 				DataPoint: DataPoint{

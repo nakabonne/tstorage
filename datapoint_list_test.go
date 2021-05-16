@@ -72,7 +72,7 @@ func Test_dataPointListImpl_insert(t *testing.T) {
 			iterator := tt.dataPointList.newIterator()
 			got := []DataPoint{}
 			for iterator.Next() {
-				got = append(got, *iterator.Value())
+				got = append(got, *iterator.DataPoint())
 			}
 			assert.Equal(t, tt.want, got)
 		})

@@ -28,7 +28,7 @@ type dataPointList interface {
 // DataPointIterator represents an iterator for data point list. The basic usage is:
 /*
   for iterator.Next() {
-    point := iterator.Value()
+    point := iterator.DataPoint()
     // Do something with dataPoint
   }
 */
@@ -39,8 +39,7 @@ type DataPointIterator interface {
 	Next() bool
 	// Value gives back the current dataPoint in the iterator.
 	// If it was called even though Next() returns false, it will return nil.
-	// FIXME: Rename to DataPoint
-	Value() *DataPoint
+	DataPoint() *DataPoint
 
 	// node gives back the current node itself.
 	node() *dataPointNode
@@ -76,7 +75,7 @@ func mergeDataPointLists(lists ...dataPointList) (dataPointList, error) {
 	for _, list := range lists {
 		iterator := list.newIterator()
 		for iterator.Next() {
-			newList.insert(iterator.Value())
+			newList.insert(iterator.DataPoint())
 		}
 	}
 	return newList, nil
@@ -200,7 +199,7 @@ func (i *dataPointIteratorImpl) Next() bool {
 	return i.current != nil
 }
 
-func (i *dataPointIteratorImpl) Value() *DataPoint {
+func (i *dataPointIteratorImpl) DataPoint() *DataPoint {
 	if i.current == nil {
 		return nil
 	}

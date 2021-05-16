@@ -28,6 +28,6 @@ func main() {
 		log.Fatal(err)
 	}
 	for iterator.Next() {
-		log.Printf("timestamp: %v, value: %v\n", iterator.Value().Timestamp, iterator.Value().Value)
+		log.Printf("timestamp: %v, value: %v\n", iterator.DataPoint().Timestamp, iterator.DataPoint().Value)
 	}
 }

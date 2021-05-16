@@ -172,7 +172,7 @@ func Test_storage_SelectRows(t *testing.T) {
 			assert.Equal(t, tt.wantSize, gotSize)
 			got := []DataPoint{}
 			for iterator.Next() {
-				got = append(got, *iterator.Value())
+				got = append(got, *iterator.DataPoint())
 			}
 			assert.Equal(t, tt.want, got)
 		})
