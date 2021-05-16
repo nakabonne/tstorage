@@ -3,7 +3,6 @@ package tstorage
 import (
 	"sort"
 
-	"github.com/nakabonne/tstorage/internal/bytesutil"
 	"github.com/nakabonne/tstorage/internal/encoding"
 )
 
@@ -12,19 +11,6 @@ import (
 type Label struct {
 	Name  []byte
 	Value []byte
-}
-
-// MakeLabel builds a label based on the given pair.
-func MakeLabel(name, value string) *Label {
-	if value == "" {
-		return nil
-	}
-	return &Label{
-		// Do not copy name and value contents for performance reasons.
-		// This reduces GC overhead on the number of objects and allocations.
-		Name:  bytesutil.ToUnsafeBytes(name),
-		Value: bytesutil.ToUnsafeBytes(value),
-	}
 }
 
 const (
