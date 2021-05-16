@@ -63,7 +63,7 @@ func Test_storage_SelectRows(t *testing.T) {
 					panic(err)
 				}
 				list := newPartitionList()
-				list.Insert(part1)
+				list.insert(part1)
 				return storage{
 					partitionList:  list,
 					workersLimitCh: make(chan struct{}, defaultWorkersLimit),
@@ -193,9 +193,9 @@ func Test_storage_SelectRows(t *testing.T) {
 					panic(err)
 				}
 				list := newPartitionList()
-				list.Insert(part1)
-				list.Insert(part2)
-				list.Insert(part3)
+				list.insert(part1)
+				list.insert(part2)
+				list.insert(part3)
 
 				return storage{
 					partitionList:  list,

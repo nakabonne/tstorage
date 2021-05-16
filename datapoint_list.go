@@ -102,7 +102,7 @@ func (l *dataPointListImpl) insert(point *DataPoint) {
 		return
 	}
 
-	// FIXME: Insert out-of-order data point to appropriate place, by traversing in order of tail to head.
+	// FIXME: insert out-of-order data point to appropriate place, by traversing in order of tail to head.
 
 	atomic.AddInt64(&l.numPoints, 1)
 }

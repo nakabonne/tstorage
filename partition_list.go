@@ -14,19 +14,19 @@ import (
 // FYI: Partitions are frequently added/deleted, on the other hand,
 // no need to take values by specifying indexes. That's why linked list is suitable.
 type PartitionList interface {
-	// Insert appends a new node to the head.
-	Insert(partition partition)
-	// Remove eliminates the given partition from the list.
-	Remove(partition partition) error
-	// Swap replaces the old partition with the new one.
-	Swap(old, new partition) error
-	// GetHead gives back the head node which is the newest one.
-	GetHead() partition
-	// Size returns the size of itself.
+	// insert appends a new node to the head.
+	insert(partition partition)
+	// remove eliminates the given partition from the list.
+	remove(partition partition) error
+	// swap replaces the old partition with the new one.
+	swap(old, new partition) error
+	// getHead gives back the head node which is the newest one.
+	getHead() partition
+	// size returns the size of itself.
 	Size() int
-	// NewIterator gives back the iterator object fot this list.
+	// newIterator gives back the iterator object fot this list.
 	// If you need to inspect all nodes within the list, use this one.
-	NewIterator() partitionIterator
+	newIterator() partitionIterator
 }
 
 // Iterator represents an iterator for partition list. The basic usage is:
@@ -58,13 +58,13 @@ func newPartitionList() PartitionList {
 	return &partitionListImpl{}
 }
 
-func (p *partitionListImpl) GetHead() partition {
+func (p *partitionListImpl) getHead() partition {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.head.value()
 }
 
-func (p *partitionListImpl) Insert(partition partition) {
+func (p *partitionListImpl) insert(partition partition) {
 	node := &partitionNode{
 		val: partition,
 	}
@@ -79,14 +79,14 @@ func (p *partitionListImpl) Insert(partition partition) {
 	atomic.AddInt64(&p.size, 1)
 }
 
-func (p *partitionListImpl) Remove(target partition) error {
+func (p *partitionListImpl) remove(target partition) error {
 	if p.Size() <= 0 {
 		return fmt.Errorf("empty partition")
 	}
 
 	// Iterate over itself from the head.
 	var prev, next *partitionNode
-	iterator := p.NewIterator()
+	iterator := p.newIterator()
 	for iterator.Next() {
 		current := iterator.currentNode()
 		if !samePartitions(current.value(), target) {
@@ -94,7 +94,7 @@ func (p *partitionListImpl) Remove(target partition) error {
 			continue
 		}
 
-		// Remove the current node.
+		// remove the current node.
 
 		iterator.Next()
 		next = iterator.currentNode()
@@ -117,14 +117,14 @@ func (p *partitionListImpl) Remove(target partition) error {
 	return fmt.Errorf("the given partition was not found")
 }
 
-func (p *partitionListImpl) Swap(old, new partition) error {
+func (p *partitionListImpl) swap(old, new partition) error {
 	if p.Size() <= 0 {
 		return fmt.Errorf("empty partition")
 	}
 
 	// Iterate over itself from the head.
 	var prev, next *partitionNode
-	iterator := p.NewIterator()
+	iterator := p.newIterator()
 	for iterator.Next() {
 		current := iterator.currentNode()
 		if !samePartitions(current.value(), old) {
@@ -132,7 +132,7 @@ func (p *partitionListImpl) Swap(old, new partition) error {
 			continue
 		}
 
-		// Swap the current node.
+		// swap the current node.
 
 		newNode := &partitionNode{
 			val:  new,
@@ -167,7 +167,7 @@ func (p *partitionListImpl) Size() int {
 	return int(atomic.LoadInt64(&p.size))
 }
 
-func (p *partitionListImpl) NewIterator() partitionIterator {
+func (p *partitionListImpl) newIterator() partitionIterator {
 	p.mu.RLock()
 	head := p.head
 	p.mu.RUnlock()

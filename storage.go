@@ -113,7 +113,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 	}
 
 	if s.inMemoryMode() {
-		s.partitionList.Insert(newMemoryPartition(nil, s.partitionDuration))
+		s.partitionList.insert(newMemoryPartition(nil, s.partitionDuration))
 		return s, nil
 	}
 
@@ -126,7 +126,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 		return nil, fmt.Errorf("failed to open data directory: %w", err)
 	}
 	if len(files) == 0 {
-		s.partitionList.Insert(newMemoryPartition(s.wal, s.partitionDuration))
+		s.partitionList.insert(newMemoryPartition(s.wal, s.partitionDuration))
 		return s, nil
 	}
 
@@ -150,9 +150,9 @@ func NewStorage(opts ...Option) (Storage, error) {
 		return partitions[i].MinTimestamp() < partitions[j].MinTimestamp()
 	})
 	for _, p := range partitions {
-		s.partitionList.Insert(p)
+		s.partitionList.insert(p)
 	}
-	s.partitionList.Insert(newMemoryPartition(s.wal, s.partitionDuration))
+	s.partitionList.insert(newMemoryPartition(s.wal, s.partitionDuration))
 
 	return s, nil
 }
@@ -207,7 +207,7 @@ func (s *storage) InsertRows(rows []Row) error {
 
 // getPartition returns a writable partition. If none, it creates a new one.
 func (s *storage) getPartition() partition {
-	head := s.partitionList.GetHead()
+	head := s.partitionList.getHead()
 	if !head.ReadOnly() {
 		return head
 	}
@@ -215,7 +215,7 @@ func (s *storage) getPartition() partition {
 	// All partitions seems to be unavailable so add a new partition to the list.
 
 	p := newMemoryPartition(s.wal, s.partitionDuration)
-	s.partitionList.Insert(p)
+	s.partitionList.insert(p)
 	return p
 }
 
@@ -229,7 +229,7 @@ func (s *storage) SelectRows(labels []Label, start, end int64) (DataPointIterato
 	pointLists := make([]dataPointList, 0)
 
 	// Iterate over all partitions from the newest one.
-	iterator := s.partitionList.NewIterator()
+	iterator := s.partitionList.newIterator()
 	for iterator.Next() {
 		part, err := iterator.Value()
 		if err != nil {
@@ -254,7 +254,7 @@ func (s *storage) SelectRows(labels []Label, start, end int64) (DataPointIterato
 }
 
 func (s *storage) FlushRows() error {
-	iterator := s.partitionList.NewIterator()
+	iterator := s.partitionList.newIterator()
 	for iterator.Next() {
 		part, err := iterator.Value()
 		if err != nil {
@@ -265,7 +265,7 @@ func (s *storage) FlushRows() error {
 		}
 
 		if s.inMemoryMode() {
-			if err := s.partitionList.Remove(part); err != nil {
+			if err := s.partitionList.remove(part); err != nil {
 				return fmt.Errorf("failed to remove partition: %w", err)
 			}
 			continue
@@ -282,7 +282,7 @@ func (s *storage) FlushRows() error {
 		if err != nil {
 			return fmt.Errorf("failed to generate disk partition for %s: %w", dir, err)
 		}
-		if err := s.partitionList.Swap(part, newPart); err != nil {
+		if err := s.partitionList.swap(part, newPart); err != nil {
 			return fmt.Errorf("failed to swap partitions: %w", err)
 		}
 	}

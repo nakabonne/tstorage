@@ -191,7 +191,7 @@ func Test_partitionList_Remove(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.partitionList.Remove(tt.target)
+			err := tt.partitionList.remove(tt.target)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.wantPartitionList, tt.partitionList)
 		})
@@ -408,12 +408,12 @@ func Test_partitionList_Swap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.partitionList.Swap(tt.old, tt.new)
+			err := tt.partitionList.swap(tt.old, tt.new)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.wantPartitionList, tt.partitionList)
 			/*
 				// Check if the partition list is as same as we'd like
-				iterator := tt.partitionListImpl.NewIterator()
+				iterator := tt.partitionListImpl.newIterator()
 				partitons := make([]partition, 0, tt.partitionListImpl.Size())
 				for iterator.Next() {
 					v, err := iterator.Value()
