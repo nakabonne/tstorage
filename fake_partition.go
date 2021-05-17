@@ -9,7 +9,7 @@ type fakePartition struct {
 	err error
 }
 
-func (f *fakePartition) InsertRows(_ []Row) error {
+func (f *fakePartition) insertRows(_ []Row) error {
 	return f.err
 }
 

@@ -13,8 +13,8 @@ package tstorage
 type partition interface {
 	// Write operations
 	//
-	// InsertRows is a goroutine safe way to insert data points into itself.
-	InsertRows(rows []Row) error
+	// insertRows is a goroutine safe way to insert data points into itself.
+	insertRows(rows []Row) error
 
 	// Read operations
 	//

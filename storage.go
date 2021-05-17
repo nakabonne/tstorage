@@ -203,7 +203,7 @@ func (s *storage) InsertRows(rows []Row) error {
 	insert := func() error {
 		defer func() { <-s.workersLimitCh }()
 		p := s.getPartition()
-		if err := p.InsertRows(rows); err != nil {
+		if err := p.insertRows(rows); err != nil {
 			return fmt.Errorf("failed to insert rows: %w", err)
 		}
 		return nil

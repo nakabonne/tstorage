@@ -31,8 +31,8 @@ func newMemoryPartition(wal wal, partitionDuration time.Duration) partition {
 	}
 }
 
-// InsertRows inserts the given rows to partition.
-func (m *memoryPartition) InsertRows(rows []Row) error {
+// insertRows inserts the given rows to partition.
+func (m *memoryPartition) insertRows(rows []Row) error {
 	if len(rows) == 0 {
 		return fmt.Errorf("no row was given")
 	}

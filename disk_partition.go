@@ -97,7 +97,7 @@ func rowsToBytes(rows []Row) []byte {
 	return []byte("not implemented yet")
 }
 
-func (d *diskPartition) InsertRows(_ []Row) error {
+func (d *diskPartition) insertRows(_ []Row) error {
 	return fmt.Errorf("can't insert rows into disk partition")
 }
 

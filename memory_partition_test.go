@@ -58,7 +58,7 @@ func Test_memoryPartition_InsertRows(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.memoryPartition.InsertRows(tt.rows)
+			err := tt.memoryPartition.insertRows(tt.rows)
 			assert.Equal(t, tt.wantErr, err != nil)
 
 			list := tt.memoryPartition.SelectRows("metric1", nil, 0, 4)
@@ -97,7 +97,7 @@ func Test_memoryPartition_SelectRows(t *testing.T) {
 			end:    3,
 			memoryPartition: func() memoryPartition {
 				m := memoryPartition{}
-				m.InsertRows([]Row{
+				m.insertRows([]Row{
 					{
 						Metric: "metric1",
 						DataPoint: DataPoint{
