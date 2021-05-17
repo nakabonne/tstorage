@@ -128,6 +128,7 @@ func (m *memoryPartition) selectAll() []Row {
 }
 
 func (m *memoryPartition) readOnly() bool {
+	// FIXME: Align time unit between min/max timestamp and partitionDuration
 	return m.maxTimestamp()-m.minTimestamp() > m.partitionDuration
 }
 
