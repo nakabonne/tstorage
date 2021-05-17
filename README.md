@@ -32,6 +32,8 @@ func main() {
 }
 ```
 
+For more examples see [here](https://pkg.go.dev/github.com/nakabonne/tstorage#pkg-examples).
+
 ## Who's it for?
 For those who want
 - a fast time-series storage engine
