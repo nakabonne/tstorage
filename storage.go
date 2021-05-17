@@ -36,7 +36,10 @@ const (
 // Storage provides goroutine safe capabilities of insertion into and retrieval from the time-series storage.
 type Storage interface {
 	Reader
-	Writer
+	// InsertRows ingests the given rows to the time-series storage.
+	InsertRows(rows []Row) error
+	// Wait waits until all tasks got done.
+	Wait()
 	// FlushRows persists all in-memory partitions ready to persisted.
 	// FIXME: Maybe it should be done within this package
 	FlushRows() error
@@ -54,14 +57,6 @@ type Reader interface {
 		}
 	*/
 	SelectRows(metric string, labels []Label, start, end int64) (iterator DataPointIterator, size int, err error)
-}
-
-// Writer provides writing access to time series data.
-type Writer interface {
-	// InsertRows ingests the given rows to the time-series storage.
-	InsertRows(rows []Row) error
-	// Wait waits until all tasks got done.
-	Wait()
 }
 
 // Row includs a data point along with properties to identify a kind of metrics.
