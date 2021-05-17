@@ -22,10 +22,10 @@ type partition interface {
 	selectRows(metric string, labels []Label, start, end int64) dataPointList
 	// selectAll gives back all rows of all metrics.
 	selectAll() []Row
-	// MinTimestamp returns the minimum Unix timestamp in milliseconds.
-	MinTimestamp() int64
-	// MaxTimestamp returns the maximum Unix timestamp in milliseconds.
-	MaxTimestamp() int64
+	// minTimestamp returns the minimum Unix timestamp in milliseconds.
+	minTimestamp() int64
+	// maxTimestamp returns the maximum Unix timestamp in milliseconds.
+	maxTimestamp() int64
 	// Size returns the number of data points the partition holds.
 	Size() int
 	// ReadOnly indicates this partition is read only or not.

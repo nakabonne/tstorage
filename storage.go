@@ -173,7 +173,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 		partitions = append(partitions, part)
 	}
 	sort.Slice(partitions, func(i, j int) bool {
-		return partitions[i].MinTimestamp() < partitions[j].MinTimestamp()
+		return partitions[i].minTimestamp() < partitions[j].minTimestamp()
 	})
 	for _, p := range partitions {
 		s.partitionList.insert(p)
@@ -261,11 +261,11 @@ func (s *storage) SelectRows(metric string, labels []Label, start, end int64) (D
 		if part == nil {
 			return nil, 0, fmt.Errorf("unexpected empty partition found")
 		}
-		if part.MaxTimestamp() < start {
+		if part.maxTimestamp() < start {
 			// No need to keep going anymore
 			break
 		}
-		if part.MinTimestamp() > end {
+		if part.minTimestamp() > end {
 			continue
 		}
 		list := part.selectRows(metric, labels, start, end)
@@ -304,7 +304,7 @@ func (s *storage) FlushRows() error {
 		rows = append(rows, part.selectAll()...)
 		// TODO: Use https://github.com/oklog/ulid instead of uuid
 		dir := filepath.Join(s.dataPath, fmt.Sprintf("p-%s", uuid.New()))
-		newPart, err := newDiskPartition(dir, rows, part.MinTimestamp(), part.MaxTimestamp())
+		newPart, err := newDiskPartition(dir, rows, part.minTimestamp(), part.maxTimestamp())
 		if err != nil {
 			return fmt.Errorf("failed to generate disk partition for %s: %w", dir, err)
 		}

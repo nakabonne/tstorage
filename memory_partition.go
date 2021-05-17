@@ -128,14 +128,14 @@ func (m *memoryPartition) selectAll() []Row {
 }
 
 func (m *memoryPartition) ReadOnly() bool {
-	return m.MaxTimestamp()-m.MinTimestamp() > m.partitionDuration
+	return m.maxTimestamp()-m.minTimestamp() > m.partitionDuration
 }
 
-func (m *memoryPartition) MinTimestamp() int64 {
+func (m *memoryPartition) minTimestamp() int64 {
 	return atomic.LoadInt64(&m.minT)
 }
 
-func (m *memoryPartition) MaxTimestamp() int64 {
+func (m *memoryPartition) maxTimestamp() int64 {
 	return atomic.LoadInt64(&m.maxT)
 }
 

@@ -21,11 +21,11 @@ func (f *fakePartition) selectAll() []Row {
 	return nil
 }
 
-func (f *fakePartition) MinTimestamp() int64 {
+func (f *fakePartition) minTimestamp() int64 {
 	return f.minT
 }
 
-func (f *fakePartition) MaxTimestamp() int64 {
+func (f *fakePartition) maxTimestamp() int64 {
 	return f.maxT
 }
 

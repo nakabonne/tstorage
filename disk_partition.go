@@ -113,11 +113,11 @@ func (d *diskPartition) selectAll() []Row {
 	return []Row{}
 }
 
-func (d *diskPartition) MinTimestamp() int64 {
+func (d *diskPartition) minTimestamp() int64 {
 	return d.minT
 }
 
-func (d *diskPartition) MaxTimestamp() int64 {
+func (d *diskPartition) maxTimestamp() int64 {
 	return d.maxT
 }
 
