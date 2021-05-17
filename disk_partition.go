@@ -121,7 +121,7 @@ func (d *diskPartition) maxTimestamp() int64 {
 	return d.maxT
 }
 
-func (d *diskPartition) Size() int {
+func (d *diskPartition) size() int {
 	return d.numPoints
 }
 

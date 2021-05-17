@@ -9,7 +9,6 @@ package tstorage
 //   it can be written. Only one partition can be writable within a partition list.
 // *ReadOnly*:
 //   it can't be written. Partitions will be ReadOnly if it exceeds the partition range.
-// FIXME: Make public methods private
 type partition interface {
 	// Write operations
 	//
@@ -26,8 +25,8 @@ type partition interface {
 	minTimestamp() int64
 	// maxTimestamp returns the maximum Unix timestamp in milliseconds.
 	maxTimestamp() int64
-	// Size returns the number of data points the partition holds.
-	Size() int
+	// size returns the number of data points the partition holds.
+	size() int
 	// readOnly indicates this partition is read only or not.
 	readOnly() bool
 }

@@ -29,7 +29,7 @@ func (f *fakePartition) maxTimestamp() int64 {
 	return f.maxT
 }
 
-func (f *fakePartition) Size() int {
+func (f *fakePartition) size() int {
 	return f.numPoints
 }
 

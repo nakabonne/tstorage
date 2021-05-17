@@ -300,7 +300,7 @@ func (s *storage) FlushRows() error {
 		// Start swapping in-memory partition for disk one.
 		// The disk partition will place at where in-memory one existed.
 
-		rows := make([]Row, 0, part.Size())
+		rows := make([]Row, 0, part.size())
 		rows = append(rows, part.selectAll()...)
 		// TODO: Use https://github.com/oklog/ulid instead of uuid
 		dir := filepath.Join(s.dataPath, fmt.Sprintf("p-%s", uuid.New()))

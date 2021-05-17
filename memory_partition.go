@@ -100,7 +100,7 @@ func (m *memoryPartition) getMetric(name string) *metric {
 }
 
 func (m *memoryPartition) selectAll() []Row {
-	rows := make([]Row, 0, m.Size())
+	rows := make([]Row, 0, m.size())
 	m.metrics.Range(func(key, value interface{}) bool {
 		mt, ok := value.(*metric)
 		if !ok {
@@ -139,7 +139,7 @@ func (m *memoryPartition) maxTimestamp() int64 {
 	return atomic.LoadInt64(&m.maxT)
 }
 
-func (m *memoryPartition) Size() int {
+func (m *memoryPartition) size() int {
 	return int(atomic.LoadInt64(&m.numPoints))
 }
 
