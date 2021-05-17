@@ -268,7 +268,7 @@ func (s *storage) SelectRows(metric string, labels []Label, start, end int64) (D
 		if part.MinTimestamp() > end {
 			continue
 		}
-		list := part.SelectRows(metric, labels, start, end)
+		list := part.selectRows(metric, labels, start, end)
 		// in order to keep the order in ascending.
 		pointLists = append([]dataPointList{list}, pointLists...)
 	}

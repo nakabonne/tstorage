@@ -78,8 +78,8 @@ func (m *memoryPartition) insertRows(rows []Row) error {
 	return nil
 }
 
-// SelectRows gives back the certain data points within the given range.
-func (m *memoryPartition) SelectRows(metric string, labels []Label, start, end int64) dataPointList {
+// selectRows gives back the certain data points within the given range.
+func (m *memoryPartition) selectRows(metric string, labels []Label, start, end int64) dataPointList {
 	name := marshalMetricName(metric, labels)
 	mt := m.getMetric(name)
 	return mt.selectPoints(start, end)
