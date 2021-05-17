@@ -6,3 +6,4 @@ dep:
 
 run-examples:
 	go run examples/in-memory/*.go
+	go run examples/concurrent-insertion/*.go
