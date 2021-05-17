@@ -411,17 +411,6 @@ func Test_partitionList_Swap(t *testing.T) {
 			err := tt.partitionList.swap(tt.old, tt.new)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.wantPartitionList, tt.partitionList)
-			/*
-				// Check if the partition list is as same as we'd like
-				iterator := tt.partitionListImpl.newIterator()
-				partitons := make([]partition, 0, tt.partitionListImpl.size())
-				for iterator.next() {
-					v, err := iterator.value()
-					assert.NoError(t, err)
-					partitons = append(partitons, v)
-				}
-				assert.Equal(t, tt.wantPartitions, partitons)
-			*/
 		})
 	}
 }

@@ -16,7 +16,7 @@ type memoryPartition struct {
 	// Write ahead log.
 	wal wal
 	// The number of data points
-	size int64
+	numPoints int64
 	// The timestamp range of partitions after which they get persisted
 	partitionDuration int64
 
@@ -65,7 +65,7 @@ func (m *memoryPartition) insertRows(rows []Row) error {
 		mt.insertPoint(&row.DataPoint)
 		rowsNum++
 	}
-	atomic.AddInt64(&m.size, rowsNum)
+	atomic.AddInt64(&m.numPoints, rowsNum)
 
 	// Make min/max timestamps up-to-date.
 	if min := atomic.LoadInt64(&m.minT); min == 0 || min > minTimestamp {
@@ -140,7 +140,7 @@ func (m *memoryPartition) maxTimestamp() int64 {
 }
 
 func (m *memoryPartition) Size() int {
-	return int(atomic.LoadInt64(&m.size))
+	return int(atomic.LoadInt64(&m.numPoints))
 }
 
 func (m *memoryPartition) ReadyToBePersisted() bool {
