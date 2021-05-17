@@ -28,8 +28,8 @@ type partition interface {
 	maxTimestamp() int64
 	// Size returns the number of data points the partition holds.
 	Size() int
-	// ReadOnly indicates this partition is read only or not.
-	ReadOnly() bool
+	// readOnly indicates this partition is read only or not.
+	readOnly() bool
 }
 
 type inMemoryPartition interface {

@@ -126,7 +126,7 @@ func (d *diskPartition) Size() int {
 }
 
 // Disk partition is immutable.
-func (d *diskPartition) ReadOnly() bool {
+func (d *diskPartition) readOnly() bool {
 	return true
 }
 

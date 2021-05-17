@@ -36,7 +36,7 @@ func (m *memoryPartition) insertRows(rows []Row) error {
 	if len(rows) == 0 {
 		return fmt.Errorf("no row was given")
 	}
-	if m.ReadOnly() {
+	if m.readOnly() {
 		return fmt.Errorf("read only partition")
 	}
 	if m.wal != nil {
@@ -127,7 +127,7 @@ func (m *memoryPartition) selectAll() []Row {
 	return rows
 }
 
-func (m *memoryPartition) ReadOnly() bool {
+func (m *memoryPartition) readOnly() bool {
 	return m.maxTimestamp()-m.minTimestamp() > m.partitionDuration
 }
 
@@ -144,7 +144,7 @@ func (m *memoryPartition) Size() int {
 }
 
 func (m *memoryPartition) ReadyToBePersisted() bool {
-	return m.ReadOnly()
+	return m.readOnly()
 }
 
 // metric has a list of data points that belong to the metric
