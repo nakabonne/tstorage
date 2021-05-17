@@ -7,7 +7,7 @@ import (
 )
 
 // dataPointList represents a linked list for data points.
-// Each dataPoint is arranged in order order of oldest to newest.
+// Each dataPoint is arranged in order of oldest to newest.
 // That is, the head node is always the oldest, the tail node is the newest.
 //
 // FYI: Data points are frequently added/deleted, on the other hand,
@@ -82,6 +82,11 @@ func mergeDataPointLists(lists ...dataPointList) (dataPointList, error) {
 }
 
 func (l *dataPointListImpl) insert(point *DataPoint) {
+	if point == nil {
+		return
+	}
+	defer atomic.AddInt64(&l.numPoints, 1)
+
 	newNode := &dataPointNode{
 		val: point,
 	}
@@ -90,21 +95,41 @@ func (l *dataPointListImpl) insert(point *DataPoint) {
 		// First insertion
 		l.setHead(newNode)
 		l.setTail(newNode)
-		atomic.AddInt64(&l.numPoints, 1)
 		return
 	}
 	if tail.value().Timestamp <= point.Timestamp {
-		// Append to the tail
+		// Append in-order data point to the tail
 		newNode.setPrev(tail)
 		tail.setNext(newNode)
 		l.setTail(newNode)
-		atomic.AddInt64(&l.numPoints, 1)
 		return
 	}
 
-	// FIXME: insert out-of-order data point to appropriate place, by traversing in order of tail to head.
+	// Apparently, the given data point is out-of-order.
 
-	atomic.AddInt64(&l.numPoints, 1)
+	head := l.getHead()
+	if head.value().Timestamp > point.Timestamp {
+		// Append data to the head
+		newNode.setNext(head)
+		head.setPrev(newNode)
+		l.setHead(newNode)
+		return
+	}
+
+	// Insert out-of-order data point to appropriate place, by traversing from tail to head.
+	current := tail
+	for i := 0; i < l.size(); i++ {
+		prev := current.getPrev()
+		if prev.value().Timestamp > point.Timestamp {
+			current = prev
+			continue
+		}
+		newNode.setPrev(prev)
+		newNode.setNext(current)
+		prev.setNext(newNode)
+		current.setPrev(newNode)
+		break
+	}
 }
 
 func (l *dataPointListImpl) size() int {

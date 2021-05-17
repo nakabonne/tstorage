@@ -317,7 +317,7 @@ func (s *storage) FlushRows() error {
 
 func (s *storage) Wait() {
 	s.wg.Wait()
-	// TODO: Prevent from new goroutines calling Write(), for graceful shutdown.
+	// TODO: Prevent from new goroutines calling InsertRows(), for graceful shutdown.
 	// TODO: Flush data points within the all memory partition into the backend.
 }
 
