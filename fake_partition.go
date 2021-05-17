@@ -3,7 +3,7 @@ package tstorage
 type fakePartition struct {
 	minT       int64
 	maxT       int64
-	size       int
+	numPoints  int
 	IsReadOnly bool
 
 	err error
@@ -30,7 +30,7 @@ func (f *fakePartition) maxTimestamp() int64 {
 }
 
 func (f *fakePartition) Size() int {
-	return f.size
+	return f.numPoints
 }
 
 func (f *fakePartition) readOnly() bool {

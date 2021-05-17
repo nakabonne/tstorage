@@ -15,9 +15,9 @@ type diskPartition struct {
 	dirPath string
 
 	// The number of data points
-	size int
-	minT int64
-	maxT int64
+	numPoints int
+	minT      int64
+	maxT      int64
 }
 
 // newDiskPartition generates a disk partition from the given data.
@@ -60,10 +60,10 @@ func newDiskPartition(dirPath string, rows []Row, minTimestamp, maxTimestamp int
 	}
 
 	return &diskPartition{
-		dirPath: dirPath,
-		size:    numDatapoints,
-		minT:    minTimestamp,
-		maxT:    maxTimestamp,
+		dirPath:   dirPath,
+		numPoints: numDatapoints,
+		minT:      minTimestamp,
+		maxT:      maxTimestamp,
 	}, nil
 }
 
@@ -85,10 +85,10 @@ func openDiskPartition(dirPath string) (partition, error) {
 		return nil, fmt.Errorf("failed to decode metadata: %w", err)
 	}
 	return &diskPartition{
-		dirPath: dirPath,
-		minT:    m.MinTimestamp,
-		maxT:    m.MaxTimestamp,
-		size:    m.NumDatapoints,
+		dirPath:   dirPath,
+		minT:      m.MinTimestamp,
+		maxT:      m.MaxTimestamp,
+		numPoints: m.NumDatapoints,
 	}, nil
 }
 
@@ -122,7 +122,7 @@ func (d *diskPartition) maxTimestamp() int64 {
 }
 
 func (d *diskPartition) Size() int {
-	return d.size
+	return d.numPoints
 }
 
 // Disk partition is immutable.
