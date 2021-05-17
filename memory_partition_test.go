@@ -249,7 +249,7 @@ func TestSelectAll(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.memoryPartition.SelectAll()
+			got := tt.memoryPartition.selectAll()
 			assert.Equal(t, tt.want, got)
 		})
 	}

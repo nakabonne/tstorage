@@ -20,8 +20,8 @@ type partition interface {
 	//
 	// selectRows gives back certain metric's data points within the given range.
 	selectRows(metric string, labels []Label, start, end int64) dataPointList
-	// SelectAll gives back all rows of all metrics.
-	SelectAll() []Row
+	// selectAll gives back all rows of all metrics.
+	selectAll() []Row
 	// MinTimestamp returns the minimum Unix timestamp in milliseconds.
 	MinTimestamp() int64
 	// MaxTimestamp returns the maximum Unix timestamp in milliseconds.

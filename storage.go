@@ -301,7 +301,7 @@ func (s *storage) FlushRows() error {
 		// The disk partition will place at where in-memory one existed.
 
 		rows := make([]Row, 0, part.Size())
-		rows = append(rows, part.SelectAll()...)
+		rows = append(rows, part.selectAll()...)
 		// TODO: Use https://github.com/oklog/ulid instead of uuid
 		dir := filepath.Join(s.dataPath, fmt.Sprintf("p-%s", uuid.New()))
 		newPart, err := newDiskPartition(dir, rows, part.MinTimestamp(), part.MaxTimestamp())

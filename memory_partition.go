@@ -99,7 +99,7 @@ func (m *memoryPartition) getMetric(name string) *metric {
 	return value.(*metric)
 }
 
-func (m *memoryPartition) SelectAll() []Row {
+func (m *memoryPartition) selectAll() []Row {
 	rows := make([]Row, 0, m.Size())
 	m.metrics.Range(func(key, value interface{}) bool {
 		mt, ok := value.(*metric)

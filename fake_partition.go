@@ -17,7 +17,7 @@ func (f *fakePartition) selectRows(_ string, _ []Label, _, _ int64) dataPointLis
 	return nil
 }
 
-func (f *fakePartition) SelectAll() []Row {
+func (f *fakePartition) selectAll() []Row {
 	return nil
 }
 

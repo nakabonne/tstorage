@@ -107,8 +107,8 @@ func (d *diskPartition) selectRows(metric string, labels []Label, start, end int
 	return newDataPointList(nil, nil, 0)
 }
 
-func (d *diskPartition) SelectAll() []Row {
-	// TODO: Implement SelectAll for disk partition
+func (d *diskPartition) selectAll() []Row {
+	// TODO: Implement selectAll for disk partition
 	fmt.Println("select all for disk partition isn't implemented yet")
 	return []Row{}
 }
