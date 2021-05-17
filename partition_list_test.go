@@ -24,13 +24,13 @@ func Test_partitionList_Remove(t *testing.T) {
 			partitionList: func() partitionListImpl {
 				second := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 2,
+						minT: 2,
 					},
 				}
 
 				first := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 					next: second,
 				}
@@ -41,18 +41,18 @@ func Test_partitionList_Remove(t *testing.T) {
 				}
 			}(),
 			target: &fakePartition{
-				minTimestamp: 1,
+				minT: 1,
 			},
 			wantPartitionList: partitionListImpl{
 				numPartitions: 1,
 				head: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 2,
+						minT: 2,
 					},
 				},
 				tail: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 2,
+						minT: 2,
 					},
 				},
 			},
@@ -62,13 +62,13 @@ func Test_partitionList_Remove(t *testing.T) {
 			partitionList: func() partitionListImpl {
 				second := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 2,
+						minT: 2,
 					},
 				}
 
 				first := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 					next: second,
 				}
@@ -79,18 +79,18 @@ func Test_partitionList_Remove(t *testing.T) {
 				}
 			}(),
 			target: &fakePartition{
-				minTimestamp: 2,
+				minT: 2,
 			},
 			wantPartitionList: partitionListImpl{
 				numPartitions: 1,
 				head: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 				},
 				tail: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 				},
 			},
@@ -100,18 +100,18 @@ func Test_partitionList_Remove(t *testing.T) {
 			partitionList: func() partitionListImpl {
 				third := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 3,
+						minT: 3,
 					},
 				}
 				second := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 2,
+						minT: 2,
 					},
 					next: third,
 				}
 				first := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 					next: second,
 				}
@@ -122,23 +122,23 @@ func Test_partitionList_Remove(t *testing.T) {
 				}
 			}(),
 			target: &fakePartition{
-				minTimestamp: 2,
+				minT: 2,
 			},
 			wantPartitionList: partitionListImpl{
 				numPartitions: 2,
 				head: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 					next: &partitionNode{
 						val: &fakePartition{
-							minTimestamp: 3,
+							minT: 3,
 						},
 					},
 				},
 				tail: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 3,
+						minT: 3,
 					},
 				},
 			},
@@ -148,13 +148,13 @@ func Test_partitionList_Remove(t *testing.T) {
 			partitionList: func() partitionListImpl {
 				second := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 2,
+						minT: 2,
 					},
 				}
 
 				first := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 					next: second,
 				}
@@ -165,18 +165,18 @@ func Test_partitionList_Remove(t *testing.T) {
 				}
 			}(),
 			target: &fakePartition{
-				minTimestamp: 3,
+				minT: 3,
 			},
 			wantPartitionList: func() partitionListImpl {
 				second := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 2,
+						minT: 2,
 					},
 				}
 
 				first := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 					next: second,
 				}
@@ -217,13 +217,13 @@ func Test_partitionList_Swap(t *testing.T) {
 			partitionList: func() partitionListImpl {
 				second := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 2,
+						minT: 2,
 					},
 				}
 
 				first := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 					next: second,
 				}
@@ -234,26 +234,26 @@ func Test_partitionList_Swap(t *testing.T) {
 				}
 			}(),
 			old: &fakePartition{
-				minTimestamp: 1,
+				minT: 1,
 			},
 			new: &fakePartition{
-				minTimestamp: 100,
+				minT: 100,
 			},
 			wantPartitionList: partitionListImpl{
 				numPartitions: 2,
 				head: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 100,
+						minT: 100,
 					},
 					next: &partitionNode{
 						val: &fakePartition{
-							minTimestamp: 2,
+							minT: 2,
 						},
 					},
 				},
 				tail: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 2,
+						minT: 2,
 					},
 				},
 			},
@@ -263,13 +263,13 @@ func Test_partitionList_Swap(t *testing.T) {
 			partitionList: func() partitionListImpl {
 				second := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 2,
+						minT: 2,
 					},
 				}
 
 				first := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 					next: second,
 				}
@@ -280,26 +280,26 @@ func Test_partitionList_Swap(t *testing.T) {
 				}
 			}(),
 			old: &fakePartition{
-				minTimestamp: 2,
+				minT: 2,
 			},
 			new: &fakePartition{
-				minTimestamp: 100,
+				minT: 100,
 			},
 			wantPartitionList: partitionListImpl{
 				numPartitions: 2,
 				head: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 					next: &partitionNode{
 						val: &fakePartition{
-							minTimestamp: 100,
+							minT: 100,
 						},
 					},
 				},
 				tail: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 100,
+						minT: 100,
 					},
 				},
 			},
@@ -309,19 +309,19 @@ func Test_partitionList_Swap(t *testing.T) {
 			partitionList: func() partitionListImpl {
 				third := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 3,
+						minT: 3,
 					},
 				}
 				second := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 2,
+						minT: 2,
 					},
 					next: third,
 				}
 
 				first := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 					next: second,
 				}
@@ -332,31 +332,31 @@ func Test_partitionList_Swap(t *testing.T) {
 				}
 			}(),
 			old: &fakePartition{
-				minTimestamp: 2,
+				minT: 2,
 			},
 			new: &fakePartition{
-				minTimestamp: 100,
+				minT: 100,
 			},
 			wantPartitionList: partitionListImpl{
 				numPartitions: 3,
 				head: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 					next: &partitionNode{
 						val: &fakePartition{
-							minTimestamp: 100,
+							minT: 100,
 						},
 						next: &partitionNode{
 							val: &fakePartition{
-								minTimestamp: 3,
+								minT: 3,
 							},
 						},
 					},
 				},
 				tail: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 3,
+						minT: 3,
 					},
 				},
 			},
@@ -366,13 +366,13 @@ func Test_partitionList_Swap(t *testing.T) {
 			partitionList: func() partitionListImpl {
 				second := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 2,
+						minT: 2,
 					},
 				}
 
 				first := &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 					next: second,
 				}
@@ -383,23 +383,23 @@ func Test_partitionList_Swap(t *testing.T) {
 				}
 			}(),
 			old: &fakePartition{
-				minTimestamp: 100,
+				minT: 100,
 			},
 			wantPartitionList: partitionListImpl{
 				numPartitions: 2,
 				head: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 1,
+						minT: 1,
 					},
 					next: &partitionNode{
 						val: &fakePartition{
-							minTimestamp: 2,
+							minT: 2,
 						},
 					},
 				},
 				tail: &partitionNode{
 					val: &fakePartition{
-						minTimestamp: 2,
+						minT: 2,
 					},
 				},
 			},

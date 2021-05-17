@@ -1,10 +1,10 @@
 package tstorage
 
 type fakePartition struct {
-	minTimestamp int64
-	maxTimestamp int64
-	size         int
-	readOnly     bool
+	minT     int64
+	maxT     int64
+	size     int
+	readOnly bool
 
 	err error
 }
@@ -22,11 +22,11 @@ func (f *fakePartition) selectAll() []Row {
 }
 
 func (f *fakePartition) MinTimestamp() int64 {
-	return f.minTimestamp
+	return f.minT
 }
 
 func (f *fakePartition) MaxTimestamp() int64 {
-	return f.maxTimestamp
+	return f.maxT
 }
 
 func (f *fakePartition) Size() int {

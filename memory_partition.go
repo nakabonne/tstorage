@@ -20,8 +20,8 @@ type memoryPartition struct {
 	// The timestamp range of partitions after which they get persisted
 	partitionDuration int64
 
-	minTimestamp int64
-	maxTimestamp int64
+	minT int64
+	maxT int64
 }
 
 func newMemoryPartition(wal wal, partitionDuration time.Duration) partition {
@@ -68,11 +68,11 @@ func (m *memoryPartition) insertRows(rows []Row) error {
 	atomic.AddInt64(&m.size, rowsNum)
 
 	// Make min/max timestamps up-to-date.
-	if min := atomic.LoadInt64(&m.minTimestamp); min == 0 || min > minTimestamp {
-		atomic.SwapInt64(&m.minTimestamp, minTimestamp)
+	if min := atomic.LoadInt64(&m.minT); min == 0 || min > minTimestamp {
+		atomic.SwapInt64(&m.minT, minTimestamp)
 	}
-	if atomic.LoadInt64(&m.maxTimestamp) < maxTimestamp {
-		atomic.SwapInt64(&m.maxTimestamp, maxTimestamp)
+	if atomic.LoadInt64(&m.maxT) < maxTimestamp {
+		atomic.SwapInt64(&m.maxT, maxTimestamp)
 	}
 
 	return nil
@@ -132,11 +132,11 @@ func (m *memoryPartition) ReadOnly() bool {
 }
 
 func (m *memoryPartition) MinTimestamp() int64 {
-	return atomic.LoadInt64(&m.minTimestamp)
+	return atomic.LoadInt64(&m.minT)
 }
 
 func (m *memoryPartition) MaxTimestamp() int64 {
-	return atomic.LoadInt64(&m.maxTimestamp)
+	return atomic.LoadInt64(&m.maxT)
 }
 
 func (m *memoryPartition) Size() int {

@@ -17,10 +17,10 @@ func TestOpenDiskPartition(t *testing.T) {
 			name:    "existent dir given",
 			dirPath: "./testdata",
 			want: &diskPartition{
-				dirPath:      "./testdata",
-				size:         2,
-				minTimestamp: 1600000,
-				maxTimestamp: 1600001,
+				dirPath: "./testdata",
+				size:    2,
+				minT:    1600000,
+				maxT:    1600001,
 			},
 		},
 		{
