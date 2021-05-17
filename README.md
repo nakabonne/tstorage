@@ -35,7 +35,6 @@ func main() {
 ## Who's it for?
 For those who want
 - a fast time-series storage engine
-- TODO: gauge...
 
 ## Internal
 TStorage's data model differs from the B-trees or LSM trees based storage engines.

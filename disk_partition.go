@@ -102,7 +102,7 @@ func (d *diskPartition) insertRows(_ []Row) error {
 }
 
 func (d *diskPartition) selectRows(metric string, labels []Label, start, end int64) dataPointList {
-	// TODO: Implement selectRows from disk partition
+	// FIXME: Implement selectRows from disk partition
 	fmt.Println("select rows for disk partition isn't implemented yet")
 	return newDataPointList(nil, nil, 0)
 }

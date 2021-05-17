@@ -82,6 +82,7 @@ func mergeDataPointLists(lists ...dataPointList) (dataPointList, error) {
 }
 
 func (l *dataPointListImpl) insert(point *DataPoint) {
+	// FIXME: Consider using mu.Lock here instead of at each method
 	if point == nil {
 		return
 	}

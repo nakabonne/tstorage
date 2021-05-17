@@ -134,7 +134,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 	if s.partitionDuration <= 0 {
 		s.partitionDuration = defaultPartitionDuration
 	}
-	if s.partitionDuration <= 0 {
+	if s.writeTimeout <= 0 {
 		s.writeTimeout = defaultWriteTimeout
 	}
 
@@ -318,7 +318,7 @@ func (s *storage) FlushRows() error {
 func (s *storage) Wait() {
 	s.wg.Wait()
 	// TODO: Prevent from new goroutines calling InsertRows(), for graceful shutdown.
-	// TODO: Flush data points within the all memory partition into the backend.
+	// FIXME: Flush data points within the all memory partition into the backend.
 }
 
 func (s *storage) inMemoryMode() bool {
