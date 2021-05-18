@@ -3,6 +3,7 @@
 package tstorage
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
@@ -20,6 +21,8 @@ import (
 )
 
 var (
+	ErrNoDataPoints = errors.New("no data points found")
+
 	// Limit the concurrency for data ingestion to GOMAXPROCS, since this operation
 	// is CPU bound, so there is no sense in running more than GOMAXPROCS concurrent
 	// goroutines on data ingestion path.
@@ -280,6 +283,9 @@ func (s *storage) SelectRows(metric string, labels []Label, start, end int64) (D
 		list := part.selectRows(metric, labels, start, end)
 		// in order to keep the order in ascending.
 		pointLists = append([]dataPointList{list}, pointLists...)
+	}
+	if len(pointLists) == 0 {
+		return nil, 0, ErrNoDataPoints
 	}
 	mergedList, err := mergeDataPointLists(pointLists...)
 	if err != nil {
