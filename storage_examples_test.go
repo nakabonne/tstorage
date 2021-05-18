@@ -1,8 +1,11 @@
 package tstorage_test
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"sync"
+	"time"
 
 	"github.com/nakabonne/tstorage"
 )
@@ -29,6 +32,60 @@ func ExampleStorage_InsertRows_simple() {
 	// Output:
 	// size: 1
 	// timestamp: 1600000, value: 0.1
+}
+
+// ExampleStorage_InsertRows_SelectRows_concurrent simulates writing and reading in concurrent.
+func ExampleStorage_InsertRows_SelectRows_concurrent() {
+	storage, err := tstorage.NewStorage(
+		tstorage.WithPartitionDuration(5 * time.Hour),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var wg sync.WaitGroup
+	// Start write workers that insert 10000 times in concurrent, as fast as possible.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := int64(1600000); i < 1610000; i++ {
+			wg.Add(1)
+			go func(timestamp int64) {
+				defer wg.Done()
+				if err := storage.InsertRows([]tstorage.Row{
+					{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: timestamp}},
+				}); err != nil {
+					log.Fatal(err)
+				}
+			}(i)
+		}
+	}()
+
+	// Start read workers that read every 1 millisecond.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				iterator, _, err := storage.SelectRows("metric1", nil, 1600000, 1610000)
+				if errors.Is(err, tstorage.ErrNoDataPoints) {
+					return
+				}
+				if err != nil {
+					log.Fatal(err)
+				}
+				for iterator.Next() {
+					_ = iterator.DataPoint().Timestamp
+					_ = iterator.DataPoint().Value
+				}
+			}()
+			time.Sleep(1 * time.Millisecond)
+		}
+	}()
+	wg.Wait()
+
 }
 
 func ExampleStorage_InsertRows_concurrent() {
