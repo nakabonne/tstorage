@@ -229,6 +229,7 @@ func (s *storage) InsertRows(rows []Row) error {
 // getPartition returns a writable partition. If none, it creates a new one.
 func (s *storage) getPartition() partition {
 	head := s.partitionList.getHead()
+	// TODO: Make not only head but also the next partition writable
 	if !head.readOnly() {
 		return head
 	}

@@ -82,7 +82,8 @@ func mergeDataPointLists(lists ...dataPointList) (dataPointList, error) {
 }
 
 func (l *dataPointListImpl) insert(point *DataPoint) {
-	// FIXME: Consider using mu.Lock here instead of at each method
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	if point == nil {
 		return
 	}
@@ -98,7 +99,7 @@ func (l *dataPointListImpl) insert(point *DataPoint) {
 		l.setTail(newNode)
 		return
 	}
-	if tail.value().Timestamp <= point.Timestamp {
+	if l.tail.value().Timestamp <= point.Timestamp {
 		// Append in-order data point to the tail
 		newNode.setPrev(tail)
 		tail.setNext(newNode)
@@ -151,26 +152,18 @@ func (l *dataPointListImpl) newIterator() DataPointIterator {
 }
 
 func (l *dataPointListImpl) setHead(node *dataPointNode) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
 	l.head = node
 }
 
 func (l *dataPointListImpl) setTail(node *dataPointNode) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
 	l.tail = node
 }
 
 func (l *dataPointListImpl) getHead() *dataPointNode {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
 	return l.head
 }
 
 func (l *dataPointListImpl) getTail() *dataPointNode {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
 	return l.tail
 }
 

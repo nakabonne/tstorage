@@ -28,13 +28,9 @@ func main() {
 	for i := int64(1600000); i < 1610000; i++ {
 		wg.Add(1)
 		go func(timestamp int64) {
-			err = storage.InsertRows([]tstorage.Row{
-				{
-					Metric:    "metric1",
-					DataPoint: tstorage.DataPoint{Timestamp: timestamp},
-				},
-			})
-			if err != nil {
+			if err := storage.InsertRows([]tstorage.Row{
+				{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: timestamp}},
+			}); err != nil {
 				log.Fatal(err)
 			}
 			wg.Done()
@@ -42,7 +38,7 @@ func main() {
 	}
 	wg.Wait()
 
-	iterator, _, err := storage.SelectRows("metric1", nil, 1600000, 1610001)
+	iterator, _, err := storage.SelectRows("metric1", nil, 1600000, 1610000)
 	if err != nil {
 		log.Fatal(err)
 	}
