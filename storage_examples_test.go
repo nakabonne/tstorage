@@ -3,7 +3,6 @@ package tstorage_test
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -40,10 +39,11 @@ func ExampleStorage_InsertRows_SelectRows_concurrent() {
 		tstorage.WithPartitionDuration(5 * time.Hour),
 	)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	var wg sync.WaitGroup
+
 	// Start write workers that insert 10000 times in concurrent, as fast as possible.
 	wg.Add(1)
 	go func() {
@@ -55,7 +55,7 @@ func ExampleStorage_InsertRows_SelectRows_concurrent() {
 				if err := storage.InsertRows([]tstorage.Row{
 					{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: timestamp}},
 				}); err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 			}(i)
 		}
@@ -74,7 +74,7 @@ func ExampleStorage_InsertRows_SelectRows_concurrent() {
 					return
 				}
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 				for iterator.Next() {
 					_ = iterator.DataPoint().Timestamp
