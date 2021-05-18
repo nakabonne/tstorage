@@ -36,7 +36,7 @@ type DataPointIterator interface {
 	// It will be positioned at the head on the first call.
 	// The return value will be true if a value can be read from the list.
 	Next() bool
-	// Value gives back the current dataPoint in the iterator.
+	// DataPoint gives back the current dataPoint in the iterator.
 	// If it was called even though Next() returns false, it will return nil.
 	DataPoint() *DataPoint
 

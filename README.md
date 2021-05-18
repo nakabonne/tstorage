@@ -16,13 +16,7 @@ import (
 func main() {
 	storage, _ := tstorage.NewStorage()
 	_ = storage.InsertRows([]tstorage.Row{
-		{
-			Metric: "metric1",
-			DataPoint: tstorage.DataPoint{
-				Timestamp: 1600000,
-				Value:     0.1,
-			},
-		},
+		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000, Value: 0.1}},
 	})
 	iterator, _, _ := storage.SelectRows("metric1", nil, 1600000, 1600001)
 	for iterator.Next() {
