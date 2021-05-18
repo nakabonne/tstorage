@@ -126,8 +126,8 @@ func (d *diskPartition) size() int {
 }
 
 // Disk partition is immutable.
-func (d *diskPartition) readOnly() bool {
-	return true
+func (d *diskPartition) active() bool {
+	return false
 }
 
 const metaFileName = "meta.json"

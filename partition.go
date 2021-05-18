@@ -27,11 +27,7 @@ type partition interface {
 	maxTimestamp() int64
 	// size returns the number of data points the partition holds.
 	size() int
-	// readOnly indicates this partition is read only or not.
-	readOnly() bool
-}
-
-type inMemoryPartition interface {
-	partition
-	ReadyToBePersisted() bool
+	// isActive means that the difference between minTimestamp and maxTimestamp
+	// is smaller than its partition duration.
+	active() bool
 }

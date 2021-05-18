@@ -9,8 +9,9 @@ import (
 // partitionList represents a linked list for partitions.
 // Each partition is arranged in order order of newest to oldest.
 // That is, the head node is always the newest, the tail node is the oldest.
-// Only head partition should be writable.
 //
+// Head and its next partitions must be writable to accept out-of-order data points
+// even if it's inactive.
 // FYI: Partitions are frequently added/deleted, on the other hand,
 // no need to take values by specifying indexes. That's why linked list is suitable.
 type partitionList interface {

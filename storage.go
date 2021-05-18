@@ -29,8 +29,9 @@ var (
 )
 
 const (
-	defaultPartitionDuration = 1 * time.Hour
-	defaultWriteTimeout      = 30 * time.Second
+	defaultPartitionDuration     = 1 * time.Hour
+	defaultWriteTimeout          = 30 * time.Second
+	defaultWritablePartitionsNum = 2
 )
 
 // Storage provides goroutine safe capabilities of insertion into and retrieval from the time-series storage.
@@ -40,9 +41,6 @@ type Storage interface {
 	InsertRows(rows []Row) error
 	// Wait waits until all tasks got done.
 	Wait()
-	// FlushRows persists all in-memory partitions ready to persisted.
-	// FIXME: Maybe it should be done within this package
-	FlushRows() error
 }
 
 // Reader provides reading access to time series data.
@@ -114,6 +112,12 @@ func WithWriteTimeout(timeout time.Duration) Option {
 	}
 }
 
+func WithLogger(logger Logger) Option {
+	return func(s *storage) {
+		s.logger = logger
+	}
+}
+
 // NewStorage gives back a new storage, which stores time-series data in the process memory by default.
 //
 // Give the WithDataPath option for running as a on-disk storage. Specify a directory with data already exists,
@@ -131,6 +135,9 @@ func NewStorage(opts ...Option) (Storage, error) {
 	}
 	if s.writeTimeout <= 0 {
 		s.writeTimeout = defaultWriteTimeout
+	}
+	if s.logger == nil {
+		s.logger = &nopLogger{}
 	}
 
 	if s.inMemoryMode() {
@@ -186,6 +193,7 @@ type storage struct {
 	dataPath          string
 	writeTimeout      time.Duration
 
+	logger         Logger
 	workersLimitCh chan struct{}
 	// wg must be incremented to guarantee all writes are done gracefully.
 	wg sync.WaitGroup
@@ -229,15 +237,19 @@ func (s *storage) InsertRows(rows []Row) error {
 // getPartition returns a writable partition. If none, it creates a new one.
 func (s *storage) getPartition() partition {
 	head := s.partitionList.getHead()
-	// TODO: Make not only head but also the next partition writable
-	if !head.readOnly() {
+	if head.active() {
 		return head
 	}
 
-	// All partitions seems to be unavailable so add a new partition to the list.
+	// All partitions seems to be inactive so add a new partition to the list.
 
 	p := newMemoryPartition(s.wal, s.partitionDuration)
 	s.partitionList.insert(p)
+	go func() {
+		if err := s.flushPartitions(); err != nil {
+			s.logger.Printf("failed to flush in-memory partitions: %v", err)
+		}
+	}()
 	return p
 }
 
@@ -275,14 +287,28 @@ func (s *storage) SelectRows(metric string, labels []Label, start, end int64) (D
 	return mergedList.newIterator(), mergedList.size(), nil
 }
 
-func (s *storage) FlushRows() error {
+func (s *storage) Wait() {
+	s.wg.Wait()
+	// TODO: Prevent from new goroutines calling InsertRows(), for graceful shutdown.
+	// FIXME: Flush data points within the all memory partition into the backend.
+}
+
+// flushPartitions persists all in-memory partitions ready to persisted.
+func (s *storage) flushPartitions() error {
+	// Keep the first two partitions as is even if they are inactive,
+	// to accept out-of-order data points.
+	i := 0
 	iterator := s.partitionList.newIterator()
 	for iterator.next() {
+		if i < defaultWritablePartitionsNum {
+			i++
+			continue
+		}
 		part := iterator.value()
 		if part == nil {
 			return fmt.Errorf("unexpected empty partition found")
 		}
-		if p, ok := part.(inMemoryPartition); !ok || !p.ReadyToBePersisted() {
+		if _, ok := part.(*memoryPartition); !ok {
 			continue
 		}
 
@@ -309,12 +335,6 @@ func (s *storage) FlushRows() error {
 		}
 	}
 	return nil
-}
-
-func (s *storage) Wait() {
-	s.wg.Wait()
-	// TODO: Prevent from new goroutines calling InsertRows(), for graceful shutdown.
-	// FIXME: Flush data points within the all memory partition into the backend.
 }
 
 func (s *storage) inMemoryMode() bool {

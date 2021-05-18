@@ -7,21 +7,19 @@ import (
 	"time"
 )
 
-var _ inMemoryPartition = &memoryPartition{}
-
 // memoryPartition implements a partition to store on the process memory.
 type memoryPartition struct {
 	// A hash map from metric-name to metric.
 	metrics sync.Map
-	// Write ahead log.
-	wal wal
 	// The number of data points
 	numPoints int64
+	minT      int64
+	maxT      int64
+
+	// Write ahead log.
+	wal wal
 	// The timestamp range of partitions after which they get persisted
 	partitionDuration int64
-
-	minT int64
-	maxT int64
 }
 
 func newMemoryPartition(wal wal, partitionDuration time.Duration) partition {
@@ -35,9 +33,6 @@ func newMemoryPartition(wal wal, partitionDuration time.Duration) partition {
 func (m *memoryPartition) insertRows(rows []Row) error {
 	if len(rows) == 0 {
 		return fmt.Errorf("no row was given")
-	}
-	if m.readOnly() {
-		return fmt.Errorf("read only partition")
 	}
 	if m.wal != nil {
 		m.wal.append(walEntry{
@@ -127,11 +122,6 @@ func (m *memoryPartition) selectAll() []Row {
 	return rows
 }
 
-func (m *memoryPartition) readOnly() bool {
-	// FIXME: Align time unit between min/max timestamp and partitionDuration
-	return m.maxTimestamp()-m.minTimestamp() > m.partitionDuration
-}
-
 func (m *memoryPartition) minTimestamp() int64 {
 	return atomic.LoadInt64(&m.minT)
 }
@@ -144,8 +134,9 @@ func (m *memoryPartition) size() int {
 	return int(atomic.LoadInt64(&m.numPoints))
 }
 
-func (m *memoryPartition) ReadyToBePersisted() bool {
-	return m.readOnly()
+func (m *memoryPartition) active() bool {
+	// FIXME: Align time unit between min/max timestamp and partitionDuration
+	return m.maxTimestamp()-m.minTimestamp() < m.partitionDuration
 }
 
 // metric has a list of data points that belong to the metric
