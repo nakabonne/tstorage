@@ -12,6 +12,7 @@ import (
 //
 // Head and its next partitions must be writable to accept out-of-order data points
 // even if it's inactive.
+//
 // FYI: Partitions are frequently added/deleted, on the other hand,
 // no need to take values by specifying indexes. That's why linked list is suitable.
 type partitionList interface {

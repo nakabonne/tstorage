@@ -27,7 +27,6 @@ type partition interface {
 	maxTimestamp() int64
 	// size returns the number of data points the partition holds.
 	size() int
-	// isActive means that the difference between minTimestamp and maxTimestamp
-	// is smaller than its partition duration.
+	// active means not only writable but having the qualities to be the head partition.
 	active() bool
 }

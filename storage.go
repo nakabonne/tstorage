@@ -112,6 +112,7 @@ func WithWriteTimeout(timeout time.Duration) Option {
 	}
 }
 
+// WithLogger specifies the logger to emit verbose output.
 func WithLogger(logger Logger) Option {
 	return func(s *storage) {
 		s.logger = logger
