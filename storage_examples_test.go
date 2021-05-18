@@ -52,7 +52,6 @@ func ExampleStorage_InsertRows_concurrent() {
 	if err != nil {
 		panic(err)
 	}
-	//fmt.Printf("size: %d\n", size)
 	for iterator.Next() {
 		fmt.Printf("timestamp: %v, value: %v\n", iterator.DataPoint().Timestamp, iterator.DataPoint().Value)
 	}

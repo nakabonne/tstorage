@@ -81,12 +81,12 @@ func mergeDataPointLists(lists ...dataPointList) (dataPointList, error) {
 }
 
 func (l *dataPointListImpl) insert(point *DataPoint) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
 	if point == nil {
 		return
 	}
 	defer atomic.AddInt64(&l.numPoints, 1)
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
 	newNode := &dataPointNode{
 		val: point,
