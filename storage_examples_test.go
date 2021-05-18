@@ -48,16 +48,15 @@ func ExampleStorage_InsertRows_concurrent() {
 	}
 	wg.Wait()
 
-	iterator, size, err := storage.SelectRows("metric1", nil, 1600000, 1601000)
+	iterator, _, err := storage.SelectRows("metric1", nil, 1600000, 1601000)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("size: %d\n", size)
+	//fmt.Printf("size: %d\n", size)
 	for iterator.Next() {
 		fmt.Printf("timestamp: %v, value: %v\n", iterator.DataPoint().Timestamp, iterator.DataPoint().Value)
 	}
 	// Output:
-	//size: 1000
 	//timestamp: 1600000, value: 0
 	//timestamp: 1600001, value: 0
 	//timestamp: 1600002, value: 0

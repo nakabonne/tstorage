@@ -20,12 +20,11 @@ type dataPointList interface {
 	// newIterator gives back the iterator object fot this list.
 	// If you need to inspect all nodes within the list, use this one.
 	newIterator() DataPointIterator
-
-	getHead() *dataPointNode
-	getTail() *dataPointNode
 }
 
-// DataPointIterator represents an iterator for data point list. The basic usage is:
+// DataPointIterator represents an iterator for data point list. It allows you to
+// iterate over the data point list. Each dataPoint is arranged in order of oldest
+// to newest. The basic usage is:
 /*
   for iterator.Next() {
     point := iterator.DataPoint()
@@ -92,34 +91,32 @@ func (l *dataPointListImpl) insert(point *DataPoint) {
 	newNode := &dataPointNode{
 		val: point,
 	}
-	tail := l.getTail()
-	if tail == nil {
+	if l.tail == nil {
 		// First insertion
-		l.setHead(newNode)
-		l.setTail(newNode)
+		l.head = newNode
+		l.tail = newNode
 		return
 	}
 	if l.tail.value().Timestamp <= point.Timestamp {
 		// Append in-order data point to the tail
-		newNode.setPrev(tail)
-		tail.setNext(newNode)
-		l.setTail(newNode)
+		newNode.setPrev(l.tail)
+		l.tail.setNext(newNode)
+		l.tail = newNode
 		return
 	}
 
 	// Apparently, the given data point is out-of-order.
 
-	head := l.getHead()
-	if head.value().Timestamp > point.Timestamp {
+	if l.head.value().Timestamp > point.Timestamp {
 		// Append data to the head
-		newNode.setNext(head)
-		head.setPrev(newNode)
-		l.setHead(newNode)
+		newNode.setNext(l.head)
+		l.head.setPrev(newNode)
+		l.head = newNode
 		return
 	}
 
 	// Insert out-of-order data point to appropriate place, by traversing from tail to head.
-	current := tail
+	current := l.tail
 	for i := 0; i < l.size(); i++ {
 		prev := current.getPrev()
 		if prev.value().Timestamp > point.Timestamp {
@@ -149,22 +146,6 @@ func (l *dataPointListImpl) newIterator() DataPointIterator {
 	return &dataPointIteratorImpl{
 		current: dummy,
 	}
-}
-
-func (l *dataPointListImpl) setHead(node *dataPointNode) {
-	l.head = node
-}
-
-func (l *dataPointListImpl) setTail(node *dataPointNode) {
-	l.tail = node
-}
-
-func (l *dataPointListImpl) getHead() *dataPointNode {
-	return l.head
-}
-
-func (l *dataPointListImpl) getTail() *dataPointNode {
-	return l.tail
 }
 
 // dataPointNode wraps a dataPoint to hold the pointer to the next/prev one.
