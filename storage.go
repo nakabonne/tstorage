@@ -103,7 +103,7 @@ func WithPartitionDuration(duration time.Duration) Option {
 
 // WithWriteTimeout specifies the timeout to wait when workers are busy.
 //
-// The store limits the number of concurrent goroutines to prevent from out of memory
+// The storage limits the number of concurrent goroutines to prevent from out of memory
 // errors and CPU trashing even if too many goroutines attempt to write.
 // Defaults to 30m.
 func WithWriteTimeout(timeout time.Duration) Option {

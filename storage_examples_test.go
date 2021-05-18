@@ -1,17 +1,19 @@
-package tstorage
+package tstorage_test
 
 import (
 	"fmt"
 	"sync"
+
+	"github.com/nakabonne/tstorage"
 )
 
 func ExampleStorage_InsertRows_simple() {
-	storage, err := NewStorage()
+	storage, err := tstorage.NewStorage()
 	if err != nil {
 		panic(err)
 	}
-	err = storage.InsertRows([]Row{
-		{Metric: "metric1", DataPoint: DataPoint{Timestamp: 1600000, Value: 0.1}},
+	err = storage.InsertRows([]tstorage.Row{
+		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000, Value: 0.1}},
 	})
 	if err != nil {
 		panic(err)
@@ -30,7 +32,7 @@ func ExampleStorage_InsertRows_simple() {
 }
 
 func ExampleStorage_InsertRows_concurrent() {
-	storage, err := NewStorage()
+	storage, err := tstorage.NewStorage()
 	if err != nil {
 		panic(err)
 	}
@@ -38,8 +40,8 @@ func ExampleStorage_InsertRows_concurrent() {
 	for i := int64(1600000); i < 1601000; i++ {
 		wg.Add(1)
 		go func(timestamp int64) {
-			if err := storage.InsertRows([]Row{
-				{Metric: "metric1", DataPoint: DataPoint{Timestamp: timestamp}},
+			if err := storage.InsertRows([]tstorage.Row{
+				{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: timestamp}},
 			}); err != nil {
 				panic(err)
 			}

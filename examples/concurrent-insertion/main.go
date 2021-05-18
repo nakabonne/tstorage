@@ -1,9 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
-	"os"
 	"sync"
 	"time"
 
@@ -11,15 +9,8 @@ import (
 )
 
 func main() {
-	tmpDir, err := ioutil.TempDir("", "tstorage")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
 	storage, err := tstorage.NewStorage(
-		tstorage.WithDataPath(tmpDir),
-		tstorage.WithPartitionDuration(5*time.Hour),
+		tstorage.WithPartitionDuration(5 * time.Hour),
 	)
 	if err != nil {
 		log.Fatal(err)
