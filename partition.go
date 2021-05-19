@@ -13,7 +13,9 @@ type partition interface {
 	// Write operations
 	//
 	// insertRows is a goroutine safe way to insert data points into itself.
-	insertRows(rows []Row) error
+	// If out-of-order data points given, they won't be ingested, instead,
+	// gave back as a first returned value .
+	insertRows(rows []Row) (outOfOrderPoints []Row, err error)
 
 	// Read operations
 	//

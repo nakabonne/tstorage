@@ -26,19 +26,10 @@ func Test_storage_SelectRows(t *testing.T) {
 			end:    4,
 			storage: func() storage {
 				part1 := newMemoryPartition(nil, 1*time.Hour)
-				err := part1.insertRows([]Row{
-					{
-						DataPoint: DataPoint{Timestamp: 1},
-						Metric:    "metric1",
-					},
-					{
-						DataPoint: DataPoint{Timestamp: 2},
-						Metric:    "metric1",
-					},
-					{
-						DataPoint: DataPoint{Timestamp: 3},
-						Metric:    "metric1",
-					},
+				_, err := part1.insertRows([]Row{
+					{DataPoint: DataPoint{Timestamp: 1}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 2}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 3}, Metric: "metric1"},
 				})
 				if err != nil {
 					panic(err)
@@ -51,15 +42,9 @@ func Test_storage_SelectRows(t *testing.T) {
 				}
 			}(),
 			want: []DataPoint{
-				{
-					Timestamp: 1,
-				},
-				{
-					Timestamp: 2,
-				},
-				{
-					Timestamp: 3,
-				},
+				{Timestamp: 1},
+				{Timestamp: 2},
+				{Timestamp: 3},
 			},
 			wantSize: 3,
 		},
@@ -70,55 +55,28 @@ func Test_storage_SelectRows(t *testing.T) {
 			end:    10,
 			storage: func() storage {
 				part1 := newMemoryPartition(nil, 1*time.Hour)
-				err := part1.insertRows([]Row{
-					{
-						DataPoint: DataPoint{Timestamp: 1},
-						Metric:    "metric1",
-					},
-					{
-						DataPoint: DataPoint{Timestamp: 2},
-						Metric:    "metric1",
-					},
-					{
-						DataPoint: DataPoint{Timestamp: 3},
-						Metric:    "metric1",
-					},
+				_, err := part1.insertRows([]Row{
+					{DataPoint: DataPoint{Timestamp: 1}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 2}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 3}, Metric: "metric1"},
 				})
 				if err != nil {
 					panic(err)
 				}
 				part2 := newMemoryPartition(nil, 1*time.Hour)
-				err = part2.insertRows([]Row{
-					{
-						DataPoint: DataPoint{Timestamp: 4},
-						Metric:    "metric1",
-					},
-					{
-						DataPoint: DataPoint{Timestamp: 5},
-						Metric:    "metric1",
-					},
-					{
-						DataPoint: DataPoint{Timestamp: 6},
-						Metric:    "metric1",
-					},
+				_, err = part2.insertRows([]Row{
+					{DataPoint: DataPoint{Timestamp: 4}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 5}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 6}, Metric: "metric1"},
 				})
 				if err != nil {
 					panic(err)
 				}
 				part3 := newMemoryPartition(nil, 1*time.Hour)
-				err = part3.insertRows([]Row{
-					{
-						DataPoint: DataPoint{Timestamp: 7},
-						Metric:    "metric1",
-					},
-					{
-						DataPoint: DataPoint{Timestamp: 8},
-						Metric:    "metric1",
-					},
-					{
-						DataPoint: DataPoint{Timestamp: 9},
-						Metric:    "metric1",
-					},
+				_, err = part3.insertRows([]Row{
+					{DataPoint: DataPoint{Timestamp: 7}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 8}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 9}, Metric: "metric1"},
 				})
 				if err != nil {
 					panic(err)
@@ -134,33 +92,15 @@ func Test_storage_SelectRows(t *testing.T) {
 				}
 			}(),
 			want: []DataPoint{
-				{
-					Timestamp: 1,
-				},
-				{
-					Timestamp: 2,
-				},
-				{
-					Timestamp: 3,
-				},
-				{
-					Timestamp: 4,
-				},
-				{
-					Timestamp: 5,
-				},
-				{
-					Timestamp: 6,
-				},
-				{
-					Timestamp: 7,
-				},
-				{
-					Timestamp: 8,
-				},
-				{
-					Timestamp: 9,
-				},
+				{Timestamp: 1},
+				{Timestamp: 2},
+				{Timestamp: 3},
+				{Timestamp: 4},
+				{Timestamp: 5},
+				{Timestamp: 6},
+				{Timestamp: 7},
+				{Timestamp: 8},
+				{Timestamp: 9},
 			},
 			wantSize: 9,
 		},

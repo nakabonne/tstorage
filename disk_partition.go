@@ -97,8 +97,8 @@ func rowsToBytes(rows []Row) []byte {
 	return []byte("not implemented yet")
 }
 
-func (d *diskPartition) insertRows(_ []Row) error {
-	return fmt.Errorf("can't insert rows into disk partition")
+func (d *diskPartition) insertRows(_ []Row) ([]Row, error) {
+	return nil, fmt.Errorf("can't insert rows into disk partition")
 }
 
 func (d *diskPartition) selectRows(metric string, labels []Label, start, end int64) dataPointList {

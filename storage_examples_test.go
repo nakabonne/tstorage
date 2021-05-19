@@ -105,7 +105,7 @@ func ExampleStorage_InsertRows_concurrent() {
 	}
 	wg.Wait()
 
-	iterator, size, err := storage.SelectRows("metric1", nil, 1600000, 1601000)
+	iterator, size, err := storage.SelectRows("metric1", nil, 1600000, 1600100)
 	if err != nil {
 		panic(err)
 	}
