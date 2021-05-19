@@ -8,58 +8,53 @@ import (
 
 func Test_memoryPartition_InsertRows(t *testing.T) {
 	tests := []struct {
-		name            string
-		memoryPartition memoryPartition
-		rows            []Row
-		wantErr         bool
-		wantDataPoints  []DataPoint
+		name               string
+		memoryPartition    memoryPartition
+		rows               []Row
+		wantErr            bool
+		wantDataPoints     []DataPoint
+		wantOutOfOrderRows []Row
 	}{
 		{
-			name:            "insert multiple rows",
+			name:            "insert in-order rows",
 			memoryPartition: memoryPartition{},
 			rows: []Row{
-				{
-					Metric: "metric1",
-					DataPoint: DataPoint{
-						Timestamp: 1,
-						Value:     0.1,
-					},
-				},
-				{
-					Metric: "metric1",
-					DataPoint: DataPoint{
-						Timestamp: 2,
-						Value:     0.1,
-					},
-				},
-				{
-					Metric: "metric1",
-					DataPoint: DataPoint{
-						Timestamp: 3,
-						Value:     0.1,
-					},
-				},
+				{Metric: "metric1", DataPoint: DataPoint{Timestamp: 1, Value: 0.1}},
+				{Metric: "metric1", DataPoint: DataPoint{Timestamp: 2, Value: 0.1}},
+				{Metric: "metric1", DataPoint: DataPoint{Timestamp: 3, Value: 0.1}},
 			},
 			wantDataPoints: []DataPoint{
-				{
-					Timestamp: 1,
-					Value:     0.1,
-				},
-				{
-					Timestamp: 2,
-					Value:     0.1,
-				},
-				{
-					Timestamp: 3,
-					Value:     0.1,
-				},
+				{Timestamp: 1, Value: 0.1},
+				{Timestamp: 2, Value: 0.1},
+				{Timestamp: 3, Value: 0.1},
+			},
+			wantOutOfOrderRows: []Row{},
+		},
+		{
+			name: "insert out-of-order rows",
+			memoryPartition: func() memoryPartition {
+				m := memoryPartition{}
+				m.insertRows([]Row{
+					{Metric: "metric1", DataPoint: DataPoint{Timestamp: 2, Value: 0.1}},
+				})
+				return m
+			}(),
+			rows: []Row{
+				{Metric: "metric1", DataPoint: DataPoint{Timestamp: 1, Value: 0.1}},
+			},
+			wantDataPoints: []DataPoint{
+				{Timestamp: 2, Value: 0.1},
+			},
+			wantOutOfOrderRows: []Row{
+				{Metric: "metric1", DataPoint: DataPoint{Timestamp: 1, Value: 0.1}},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.memoryPartition.insertRows(tt.rows)
+			gotOutOfOrder, err := tt.memoryPartition.insertRows(tt.rows)
 			assert.Equal(t, tt.wantErr, err != nil)
+			assert.Equal(t, tt.wantOutOfOrderRows, gotOutOfOrder)
 
 			list := tt.memoryPartition.selectRows("metric1", nil, 0, 4)
 			iterator := list.newIterator()

@@ -208,9 +208,12 @@ func (s *storage) InsertRows(rows []Row) error {
 	insert := func() error {
 		defer func() { <-s.workersLimitCh }()
 		p := s.getPartition()
-		if err := p.insertRows(rows); err != nil {
+		outOfOrderRows, err := p.insertRows(rows)
+		if err != nil {
 			return fmt.Errorf("failed to insert rows: %w", err)
 		}
+		// FIXME: Try to insert out-of-order rows to head's next partition
+		_ = outOfOrderRows
 		return nil
 	}
 

@@ -13,13 +13,15 @@ type memoryPartition struct {
 	metrics sync.Map
 	// The number of data points
 	numPoints int64
-	minT      int64
-	maxT      int64
+	// minT is immutable.
+	minT int64
+	maxT int64
 
 	// Write ahead log.
 	wal wal
 	// The timestamp range of partitions after which they get persisted
 	partitionDuration int64
+	once              sync.Once
 }
 
 func newMemoryPartition(wal wal, partitionDuration time.Duration) partition {
@@ -30,9 +32,9 @@ func newMemoryPartition(wal wal, partitionDuration time.Duration) partition {
 }
 
 // insertRows inserts the given rows to partition.
-func (m *memoryPartition) insertRows(rows []Row) error {
+func (m *memoryPartition) insertRows(rows []Row) ([]Row, error) {
 	if len(rows) == 0 {
-		return fmt.Errorf("no row was given")
+		return nil, fmt.Errorf("no rows given")
 	}
 	if m.wal != nil {
 		m.wal.append(walEntry{
@@ -41,16 +43,30 @@ func (m *memoryPartition) insertRows(rows []Row) error {
 		})
 	}
 
-	minTimestamp := rows[0].Timestamp
+	// Set min timestamp at only first.
+	m.once.Do(func() {
+		min := rows[0].Timestamp
+		for i := range rows {
+			row := rows[i]
+			if row.Timestamp < min {
+				min = row.Timestamp
+			}
+		}
+		atomic.StoreInt64(&m.minT, min)
+	})
+
+	// TODO: Use rows list instead of slice
+	outOfOrderRows := make([]Row, 0)
 	maxTimestamp := rows[0].Timestamp
 	var rowsNum int64
 	for i := range rows {
 		row := rows[i]
+		if row.Timestamp < m.minTimestamp() {
+			outOfOrderRows = append(outOfOrderRows, row)
+			continue
+		}
 		if row.Timestamp == 0 {
 			row.Timestamp = time.Now().UnixNano()
-		}
-		if row.Timestamp < minTimestamp {
-			minTimestamp = row.Timestamp
 		}
 		if row.Timestamp > maxTimestamp {
 			maxTimestamp = row.Timestamp
@@ -62,15 +78,12 @@ func (m *memoryPartition) insertRows(rows []Row) error {
 	}
 	atomic.AddInt64(&m.numPoints, rowsNum)
 
-	// Make min/max timestamps up-to-date.
-	if min := atomic.LoadInt64(&m.minT); min == 0 || min > minTimestamp {
-		atomic.SwapInt64(&m.minT, minTimestamp)
-	}
+	// Make max timestamp up-to-date.
 	if atomic.LoadInt64(&m.maxT) < maxTimestamp {
 		atomic.SwapInt64(&m.maxT, maxTimestamp)
 	}
 
-	return nil
+	return outOfOrderRows, nil
 }
 
 // selectRows gives back the certain data points within the given range.

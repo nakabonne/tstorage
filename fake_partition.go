@@ -9,8 +9,8 @@ type fakePartition struct {
 	err error
 }
 
-func (f *fakePartition) insertRows(_ []Row) error {
-	return f.err
+func (f *fakePartition) insertRows(_ []Row) ([]Row, error) {
+	return nil, f.err
 }
 
 func (f *fakePartition) selectRows(_ string, _ []Label, _, _ int64) dataPointList {
