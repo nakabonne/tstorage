@@ -165,6 +165,7 @@ func (m *metric) insertPoint(point *DataPoint) {
 
 // selectPoints returns a new dataPointList. It just takes head and tail out and sets them to the new one.
 func (m *metric) selectPoints(start, end int64) dataPointList {
+	// TODO: Consider using binary search
 	// Position the iterator at the node to be head.
 	var head *dataPointNode
 	iterator := m.points.newIterator()
