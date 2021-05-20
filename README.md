@@ -42,15 +42,15 @@ Benchmark tests were made using an cpu: Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz
 $ go version
 go version go1.16.2 darwin/amd64
 
-$ go test -benchtime=1s -benchmem -bench=. .
+$ go test -benchtime=4s -benchmem -bench=. .
 goos: darwin
 goarch: amd64
 pkg: github.com/nakabonne/tstorage
 cpu: Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz
-BenchmarkStorage_InsertRows-8                	 2709451	       371.0 ns/op	     176 B/op	       3 allocs/op
-BenchmarkStorage_InsertRows_out_of_order-8   	 4936034	       243.9 ns/op	     192 B/op	       3 allocs/op
+BenchmarkStorage_InsertRows-8                	12284769	       358.3 ns/op	     176 B/op	       3 allocs/op
+BenchmarkStorage_InsertRows_out_of_order-8   	20091308	       233.9 ns/op	     192 B/op	       3 allocs/op
 PASS
-ok  	github.com/nakabonne/tstorage	3.136s
+ok  	github.com/nakabonne/tstorage	10.307s
 ```
 
 ## Used by
