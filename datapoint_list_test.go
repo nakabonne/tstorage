@@ -17,13 +17,9 @@ func Test_dataPointListImpl_insert(t *testing.T) {
 		{
 			name:          "first insertion",
 			dataPointList: &dataPointListImpl{},
-			point: &DataPoint{
-				Timestamp: 1,
-			},
+			point:         &DataPoint{Timestamp: 1},
 			want: []DataPoint{
-				{
-					Timestamp: 1,
-				},
+				{Timestamp: 1},
 			},
 			wantSize: 1,
 		},
@@ -31,32 +27,20 @@ func Test_dataPointListImpl_insert(t *testing.T) {
 			name: "insert in order data",
 			dataPointList: func() dataPointList {
 				node1 := &dataPointNode{
-					val: &DataPoint{
-						Timestamp: 1,
-					},
+					val: &DataPoint{Timestamp: 1},
 				}
 				node2 := &dataPointNode{
-					val: &DataPoint{
-						Timestamp: 2,
-					},
+					val: &DataPoint{Timestamp: 2},
 				}
 				node1.next = node2
 				node2.prev = node1
 				return newDataPointList(node1, node2, 2)
 			}(),
-			point: &DataPoint{
-				Timestamp: 3,
-			},
+			point: &DataPoint{Timestamp: 3},
 			want: []DataPoint{
-				{
-					Timestamp: 1,
-				},
-				{
-					Timestamp: 2,
-				},
-				{
-					Timestamp: 3,
-				},
+				{Timestamp: 1},
+				{Timestamp: 2},
+				{Timestamp: 3},
 			},
 			wantSize: 3,
 		},
@@ -64,19 +48,13 @@ func Test_dataPointListImpl_insert(t *testing.T) {
 			name: "insert out of order data into the middle",
 			dataPointList: func() dataPointList {
 				node1 := &dataPointNode{
-					val: &DataPoint{
-						Timestamp: 1,
-					},
+					val: &DataPoint{Timestamp: 1},
 				}
 				node2 := &dataPointNode{
-					val: &DataPoint{
-						Timestamp: 3,
-					},
+					val: &DataPoint{Timestamp: 3},
 				}
 				node3 := &dataPointNode{
-					val: &DataPoint{
-						Timestamp: 4,
-					},
+					val: &DataPoint{Timestamp: 4},
 				}
 				node1.next = node2
 				node2.prev = node1
@@ -84,22 +62,12 @@ func Test_dataPointListImpl_insert(t *testing.T) {
 				node3.prev = node2
 				return newDataPointList(node1, node3, 3)
 			}(),
-			point: &DataPoint{
-				Timestamp: 2,
-			},
+			point: &DataPoint{Timestamp: 2},
 			want: []DataPoint{
-				{
-					Timestamp: 1,
-				},
-				{
-					Timestamp: 2,
-				},
-				{
-					Timestamp: 3,
-				},
-				{
-					Timestamp: 4,
-				},
+				{Timestamp: 1},
+				{Timestamp: 2},
+				{Timestamp: 3},
+				{Timestamp: 4},
 			},
 			wantSize: 4,
 		},
@@ -107,19 +75,13 @@ func Test_dataPointListImpl_insert(t *testing.T) {
 			name: "insert out of order data into the head",
 			dataPointList: func() dataPointList {
 				node1 := &dataPointNode{
-					val: &DataPoint{
-						Timestamp: 1,
-					},
+					val: &DataPoint{Timestamp: 1},
 				}
 				node2 := &dataPointNode{
-					val: &DataPoint{
-						Timestamp: 2,
-					},
+					val: &DataPoint{Timestamp: 2},
 				}
 				node3 := &dataPointNode{
-					val: &DataPoint{
-						Timestamp: 3,
-					},
+					val: &DataPoint{Timestamp: 3},
 				}
 				node1.next = node2
 				node2.prev = node1
@@ -127,22 +89,12 @@ func Test_dataPointListImpl_insert(t *testing.T) {
 				node3.prev = node2
 				return newDataPointList(node1, node3, 3)
 			}(),
-			point: &DataPoint{
-				Timestamp: 0,
-			},
+			point: &DataPoint{Timestamp: 0},
 			want: []DataPoint{
-				{
-					Timestamp: 0,
-				},
-				{
-					Timestamp: 1,
-				},
-				{
-					Timestamp: 2,
-				},
-				{
-					Timestamp: 3,
-				},
+				{Timestamp: 0},
+				{Timestamp: 1},
+				{Timestamp: 2},
+				{Timestamp: 3},
 			},
 			wantSize: 4,
 		},
@@ -150,19 +102,13 @@ func Test_dataPointListImpl_insert(t *testing.T) {
 			name: "insert data point as same as head",
 			dataPointList: func() dataPointList {
 				node1 := &dataPointNode{
-					val: &DataPoint{
-						Timestamp: 1,
-					},
+					val: &DataPoint{Timestamp: 1},
 				}
 				node2 := &dataPointNode{
-					val: &DataPoint{
-						Timestamp: 2,
-					},
+					val: &DataPoint{Timestamp: 2},
 				}
 				node3 := &dataPointNode{
-					val: &DataPoint{
-						Timestamp: 3,
-					},
+					val: &DataPoint{Timestamp: 3},
 				}
 				node1.next = node2
 				node2.prev = node1
@@ -170,22 +116,12 @@ func Test_dataPointListImpl_insert(t *testing.T) {
 				node3.prev = node2
 				return newDataPointList(node1, node3, 3)
 			}(),
-			point: &DataPoint{
-				Timestamp: 1,
-			},
+			point: &DataPoint{Timestamp: 1},
 			want: []DataPoint{
-				{
-					Timestamp: 1,
-				},
-				{
-					Timestamp: 1,
-				},
-				{
-					Timestamp: 2,
-				},
-				{
-					Timestamp: 3,
-				},
+				{Timestamp: 1},
+				{Timestamp: 1},
+				{Timestamp: 2},
+				{Timestamp: 3},
 			},
 			wantSize: 4,
 		},
