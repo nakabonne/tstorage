@@ -29,8 +29,17 @@ var (
 	partitionDirRegex = regexp.MustCompile(`^p-.+`)
 )
 
+// TimestampPrecision represents precision of timestamps. See WithTimestampPrecision
+type TimestampPrecision string
+
 const (
+	Nanoseconds  TimestampPrecision = "ns"
+	Microseconds TimestampPrecision = "us"
+	Milliseconds TimestampPrecision = "ms"
+	Seconds      TimestampPrecision = "s"
+
 	defaultPartitionDuration     = 1 * time.Hour
+	defaultTimestampPrecision    = Nanoseconds
 	defaultWriteTimeout          = 30 * time.Second
 	defaultWritablePartitionsNum = 2
 )
@@ -39,6 +48,7 @@ const (
 type Storage interface {
 	Reader
 	// InsertRows ingests the given rows to the time-series storage.
+	// If a timestamp isn't specified, it uses the machine's local timestamp in UTC.
 	InsertRows(rows []Row) error
 	// Wait waits until all tasks got done.
 	Wait()
@@ -74,7 +84,6 @@ type DataPoint struct {
 	// The actual value. This field must be set.
 	Value float64
 	// Unix timestamp.
-	// The current Unix time in nanoseconds will be populated if zero given.
 	Timestamp int64
 }
 
@@ -99,6 +108,14 @@ func WithDataPath(dataPath string) Option {
 func WithPartitionDuration(duration time.Duration) Option {
 	return func(s *storage) {
 		s.partitionDuration = duration
+	}
+}
+
+// WithTimestampPrecision specifies the precision of timestamps to be used by all operations.
+// Defaults to Nanoseconds
+func WithTimestampPrecision(precision TimestampPrecision) Option {
+	return func(s *storage) {
+		s.timestampPrecision = precision
 	}
 }
 
@@ -135,6 +152,9 @@ func NewStorage(opts ...Option) (Storage, error) {
 	if s.partitionDuration <= 0 {
 		s.partitionDuration = defaultPartitionDuration
 	}
+	if s.timestampPrecision == "" {
+		s.timestampPrecision = defaultTimestampPrecision
+	}
 	if s.writeTimeout <= 0 {
 		s.writeTimeout = defaultWriteTimeout
 	}
@@ -146,7 +166,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 	}
 
 	if s.inMemoryMode() {
-		s.partitionList.insert(s.newHeadPartition(nil, s.partitionDuration))
+		s.partitionList.insert(s.newHeadPartition(nil, s.partitionDuration, s.timestampPrecision))
 		return s, nil
 	}
 
@@ -159,7 +179,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 		return nil, fmt.Errorf("failed to open data directory: %w", err)
 	}
 	if len(files) == 0 {
-		s.partitionList.insert(s.newHeadPartition(s.wal, s.partitionDuration))
+		s.partitionList.insert(s.newHeadPartition(s.wal, s.partitionDuration, s.timestampPrecision))
 		return s, nil
 	}
 
@@ -185,7 +205,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 	for _, p := range partitions {
 		s.partitionList.insert(p)
 	}
-	s.partitionList.insert(s.newHeadPartition(s.wal, s.partitionDuration))
+	s.partitionList.insert(s.newHeadPartition(s.wal, s.partitionDuration, s.timestampPrecision))
 
 	return s, nil
 }
@@ -193,11 +213,12 @@ func NewStorage(opts ...Option) (Storage, error) {
 type storage struct {
 	partitionList partitionList
 
-	wal               wal
-	partitionDuration time.Duration
-	dataPath          string
-	writeTimeout      time.Duration
-	newHeadPartition  func(wal, time.Duration) partition
+	wal                wal
+	partitionDuration  time.Duration
+	timestampPrecision TimestampPrecision
+	dataPath           string
+	writeTimeout       time.Duration
+	newHeadPartition   func(wal, time.Duration, TimestampPrecision) partition
 
 	logger         Logger
 	workersLimitCh chan struct{}
@@ -252,7 +273,7 @@ func (s *storage) getPartition() partition {
 
 	// All partitions seems to be inactive so add a new partition to the list.
 
-	p := s.newHeadPartition(s.wal, s.partitionDuration)
+	p := s.newHeadPartition(s.wal, s.partitionDuration, s.timestampPrecision)
 	s.partitionList.insert(p)
 	go func() {
 		if err := s.flushPartitions(); err != nil {

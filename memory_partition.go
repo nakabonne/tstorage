@@ -20,14 +20,27 @@ type memoryPartition struct {
 	// Write ahead log.
 	wal wal
 	// The timestamp range of partitions after which they get persisted
-	partitionDuration int64
-	once              sync.Once
+	partitionDuration  int64
+	timestampPrecision TimestampPrecision
+	once               sync.Once
 }
 
-func newMemoryPartition(wal wal, partitionDuration time.Duration) partition {
+func newMemoryPartition(wal wal, partitionDuration time.Duration, precision TimestampPrecision) partition {
+	var d int64
+	switch precision {
+	case Nanoseconds:
+		d = partitionDuration.Nanoseconds()
+	case Microseconds:
+		d = partitionDuration.Microseconds()
+	case Milliseconds:
+		d = partitionDuration.Milliseconds()
+	case Seconds:
+		d = int64(partitionDuration.Seconds())
+	}
 	return &memoryPartition{
-		partitionDuration: partitionDuration.Milliseconds(),
-		wal:               wal,
+		partitionDuration:  d,
+		wal:                wal,
+		timestampPrecision: precision,
 	}
 }
 
@@ -66,7 +79,7 @@ func (m *memoryPartition) insertRows(rows []Row) ([]Row, error) {
 			continue
 		}
 		if row.Timestamp == 0 {
-			row.Timestamp = time.Now().UnixNano()
+			row.Timestamp = now(m.timestampPrecision)
 		}
 		if row.Timestamp > maxTimestamp {
 			maxTimestamp = row.Timestamp
@@ -84,6 +97,23 @@ func (m *memoryPartition) insertRows(rows []Row) ([]Row, error) {
 	}
 
 	return outdatedRows, nil
+}
+
+func now(precision TimestampPrecision) int64 {
+	nowNano := time.Now().UTC().UnixNano()
+	switch precision {
+	case Nanoseconds:
+		return nowNano
+	case Microseconds:
+		return nowNano / 1e3
+	case Milliseconds:
+		return nowNano / 1e6
+	case Seconds:
+		// FIXME: Impl
+		return 0
+	default:
+		return 0
+	}
 }
 
 // selectRows gives back the certain data points within the given range.

@@ -38,10 +38,11 @@ func BenchmarkStorage_InsertRows(b *testing.B) {
 
 func BenchmarkStorage_InsertRowsSlice(b *testing.B) {
 	withNewHeadPartition := func(s *storage) {
-		s.newHeadPartition = func(wal wal, d time.Duration) partition {
+		s.newHeadPartition = func(wal wal, d time.Duration, precision TimestampPrecision) partition {
 			m := &memoryPartition{
-				wal:               wal,
-				partitionDuration: d.Milliseconds(),
+				wal:                wal,
+				partitionDuration:  d.Milliseconds(),
+				timestampPrecision: precision,
 			}
 			m.metrics.Store("metric1", &metric{
 				name:   "metric1",
