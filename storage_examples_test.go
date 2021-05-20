@@ -118,7 +118,6 @@ func ExampleStorage_InsertRows_concurrent() {
 		panic(err)
 	}
 	fmt.Printf("size: %d\n", size)
-	// FIXME: Look into why sometimes 1600000 or 1600001 are missing
 	for iterator.Next() {
 		fmt.Printf("timestamp: %v, value: %v\n", iterator.DataPoint().Timestamp, iterator.DataPoint().Value)
 	}
@@ -240,6 +239,7 @@ func ExampleStorage_InsertRows_concurrent_out_of_order() {
 	}
 
 	var wg sync.WaitGroup
+	// Start insertion in descending order.
 	for i := int64(1600099); i > 1600000; i-- {
 		wg.Add(1)
 		go func(timestamp int64) {
@@ -258,7 +258,6 @@ func ExampleStorage_InsertRows_concurrent_out_of_order() {
 		panic(err)
 	}
 	fmt.Printf("size: %d\n", size)
-	// FIXME: Look into why sometimes 1600000 or 1600001 are missing
 	for iterator.Next() {
 		fmt.Printf("timestamp: %v, value: %v\n", iterator.DataPoint().Timestamp, iterator.DataPoint().Value)
 	}
