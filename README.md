@@ -35,5 +35,23 @@ For those who want
 ## Internal
 TStorage's data model differs from the B-trees or LSM trees based storage engines.
 
+## Benchmarks
+Benchmark tests were made using an cpu: Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz with 16GB of RAM on macOS 10.15.7
+
+```
+$ go version
+go version go1.16.2 darwin/amd64
+
+$ go test -benchtime=1s -benchmem -bench=. .
+goos: darwin
+goarch: amd64
+pkg: github.com/nakabonne/tstorage
+cpu: Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz
+BenchmarkStorage_InsertRows-8                	 2709451	       371.0 ns/op	     176 B/op	       3 allocs/op
+BenchmarkStorage_InsertRows_out_of_order-8   	 4936034	       243.9 ns/op	     192 B/op	       3 allocs/op
+PASS
+ok  	github.com/nakabonne/tstorage	3.136s
+```
+
 ## Used by
 - [ali](https://github.com/nakabonne/ali) - A load testing tool capable of performing real-time analysis
