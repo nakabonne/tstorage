@@ -9,9 +9,6 @@ import (
 // dataPointList represents a linked list for data points.
 // Each dataPoint is arranged in order of oldest to newest.
 // That is, the head node is always the oldest, the tail node is the newest.
-//
-// FYI: Data points are frequently added/deleted, on the other hand,
-// no need to take values by specifying indexes. That's why linked list is suitable.
 type dataPointList interface {
 	// insert puts a data point to a the appropriate point.
 	insert(point *DataPoint)
