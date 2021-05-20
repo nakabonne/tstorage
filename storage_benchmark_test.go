@@ -7,10 +7,24 @@ import (
 	"time"
 )
 
+func BenchmarkStorage_SelectRows(b *testing.B) {
+	storage, err := NewStorage()
+	if err != nil {
+		panic(err)
+	}
+	for i := 1; i < 100000; i++ {
+		storage.InsertRows([]Row{
+			{Metric: "metric1", DataPoint: DataPoint{Timestamp: int64(i), Value: 0.1}},
+		})
+	}
+	b.ResetTimer()
+	for i := 1; i < b.N; i++ {
+		_, _, _ = storage.SelectRows("metric1", nil, 1, 100000)
+	}
+}
+
 func BenchmarkStorage_InsertRows(b *testing.B) {
-	storage, err := NewStorage(
-		WithPartitionDuration(1000000 * time.Hour),
-	)
+	storage, err := NewStorage()
 	if err != nil {
 		panic(err)
 	}
@@ -37,7 +51,6 @@ func BenchmarkStorage_InsertRowsSlice(b *testing.B) {
 		}
 	}
 	storage, err := NewStorage(
-		WithPartitionDuration(1000000*time.Hour),
 		withNewHeadPartition,
 	)
 	if err != nil {
