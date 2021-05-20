@@ -178,7 +178,6 @@ func (m *memoryPartition) size() int {
 }
 
 func (m *memoryPartition) active() bool {
-	// FIXME: Align time unit between min/max timestamp and partitionDuration
 	return m.maxTimestamp()-m.minTimestamp() < m.partitionDuration
 }
 
@@ -196,6 +195,7 @@ func (m *metric) insertPoint(point *DataPoint) {
 // selectPoints returns a new dataPointList. It just takes head and tail out and sets them to the new one.
 func (m *metric) selectPoints(start, end int64) dataPointList {
 	// TODO: Consider using binary search
+	//   using slice may be better.
 	// Position the iterator at the node to be head.
 	var head *dataPointNode
 	iterator := m.points.newIterator()
