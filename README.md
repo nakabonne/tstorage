@@ -14,11 +14,13 @@ import (
 )
 
 func main() {
-	storage, _ := tstorage.NewStorage()
+	storage, _ := tstorage.NewStorage(
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
+	)
 	_ = storage.InsertRows([]tstorage.Row{
-		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000, Value: 0.1}},
+		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000000, Value: 0.1}},
 	})
-	iterator, _, _ := storage.SelectRows("metric1", nil, 1600000, 1600001)
+	iterator, _, _ := storage.SelectRows("metric1", nil, 1600000000, 1600000001)
 	for iterator.Next() {
 		fmt.Printf("timestamp: %v, value: %v\n", iterator.DataPoint().Timestamp, iterator.DataPoint().Value)
 		// => timestamp: 1600000, value: 0.1

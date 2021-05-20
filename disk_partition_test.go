@@ -19,8 +19,8 @@ func TestOpenDiskPartition(t *testing.T) {
 			want: &diskPartition{
 				dirPath:   "./testdata",
 				numPoints: 2,
-				minT:      1600000,
-				maxT:      1600001,
+				minT:      1600000000,
+				maxT:      1600000001,
 			},
 		},
 		{

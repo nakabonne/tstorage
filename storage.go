@@ -60,7 +60,7 @@ type Reader interface {
 	// Keep in mind that start is inclusive, end is exclusive, and both must be Unix timestamp.
 	// Typically the given iterator can be used to iterate over the data points, like:
 	/*
-		iterator, _, _ := storage.SelectRows(labels, 1600000, 1600001)
+		iterator, _, _ := storage.SelectRows(labels, 1600000000, 1600000001)
 		for iterator.next() {
 			fmt.Printf("value: %v\n", iterator.value())
 		}

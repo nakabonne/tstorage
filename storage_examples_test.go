@@ -10,17 +10,19 @@ import (
 )
 
 func ExampleStorage_InsertRows_simple() {
-	storage, err := tstorage.NewStorage()
+	storage, err := tstorage.NewStorage(
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
+	)
 	if err != nil {
 		panic(err)
 	}
 	err = storage.InsertRows([]tstorage.Row{
-		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000, Value: 0.1}},
+		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000000, Value: 0.1}},
 	})
 	if err != nil {
 		panic(err)
 	}
-	iterator, size, err := storage.SelectRows("metric1", nil, 1600000, 1600001)
+	iterator, size, err := storage.SelectRows("metric1", nil, 1600000000, 1600000001)
 	if err != nil {
 		panic(err)
 	}
@@ -30,13 +32,14 @@ func ExampleStorage_InsertRows_simple() {
 	}
 	// Output:
 	// size: 1
-	// timestamp: 1600000, value: 0.1
+	// timestamp: 1600000000, value: 0.1
 }
 
 // ExampleStorage_InsertRows_SelectRows_concurrent simulates writing and reading in concurrent.
 func ExampleStorage_InsertRows_SelectRows_concurrent() {
 	storage, err := tstorage.NewStorage(
-		tstorage.WithPartitionDuration(5 * time.Hour),
+		tstorage.WithPartitionDuration(5*time.Hour),
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
 	)
 	if err != nil {
 		panic(err)
@@ -48,7 +51,7 @@ func ExampleStorage_InsertRows_SelectRows_concurrent() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for i := int64(1600000); i < 1610000; i++ {
+		for i := int64(1600000000); i < 1600010000; i++ {
 			wg.Add(1)
 			go func(timestamp int64) {
 				defer wg.Done()
@@ -69,7 +72,7 @@ func ExampleStorage_InsertRows_SelectRows_concurrent() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				iterator, _, err := storage.SelectRows("metric1", nil, 1600000, 1610000)
+				iterator, _, err := storage.SelectRows("metric1", nil, 1600000000, 1600010000)
 				if errors.Is(err, tstorage.ErrNoDataPoints) {
 					return
 				}
@@ -87,20 +90,22 @@ func ExampleStorage_InsertRows_SelectRows_concurrent() {
 }
 
 func ExampleStorage_InsertRows_concurrent() {
-	storage, err := tstorage.NewStorage()
+	storage, err := tstorage.NewStorage(
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
+	)
 	if err != nil {
 		panic(err)
 	}
 
 	// First insert in order to ensure min timestamp
 	if err := storage.InsertRows([]tstorage.Row{
-		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000}},
+		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000000}},
 	}); err != nil {
 		panic(err)
 	}
 
 	var wg sync.WaitGroup
-	for i := int64(1600001); i < 1600100; i++ {
+	for i := int64(1600000001); i < 1600000100; i++ {
 		wg.Add(1)
 		go func(timestamp int64) {
 			if err := storage.InsertRows([]tstorage.Row{
@@ -113,7 +118,7 @@ func ExampleStorage_InsertRows_concurrent() {
 	}
 	wg.Wait()
 
-	iterator, size, err := storage.SelectRows("metric1", nil, 1600000, 1600100)
+	iterator, size, err := storage.SelectRows("metric1", nil, 1600000000, 1600000100)
 	if err != nil {
 		panic(err)
 	}
@@ -123,124 +128,126 @@ func ExampleStorage_InsertRows_concurrent() {
 	}
 	// Output:
 	//size: 100
-	//timestamp: 1600000, value: 0
-	//timestamp: 1600001, value: 0
-	//timestamp: 1600002, value: 0
-	//timestamp: 1600003, value: 0
-	//timestamp: 1600004, value: 0
-	//timestamp: 1600005, value: 0
-	//timestamp: 1600006, value: 0
-	//timestamp: 1600007, value: 0
-	//timestamp: 1600008, value: 0
-	//timestamp: 1600009, value: 0
-	//timestamp: 1600010, value: 0
-	//timestamp: 1600011, value: 0
-	//timestamp: 1600012, value: 0
-	//timestamp: 1600013, value: 0
-	//timestamp: 1600014, value: 0
-	//timestamp: 1600015, value: 0
-	//timestamp: 1600016, value: 0
-	//timestamp: 1600017, value: 0
-	//timestamp: 1600018, value: 0
-	//timestamp: 1600019, value: 0
-	//timestamp: 1600020, value: 0
-	//timestamp: 1600021, value: 0
-	//timestamp: 1600022, value: 0
-	//timestamp: 1600023, value: 0
-	//timestamp: 1600024, value: 0
-	//timestamp: 1600025, value: 0
-	//timestamp: 1600026, value: 0
-	//timestamp: 1600027, value: 0
-	//timestamp: 1600028, value: 0
-	//timestamp: 1600029, value: 0
-	//timestamp: 1600030, value: 0
-	//timestamp: 1600031, value: 0
-	//timestamp: 1600032, value: 0
-	//timestamp: 1600033, value: 0
-	//timestamp: 1600034, value: 0
-	//timestamp: 1600035, value: 0
-	//timestamp: 1600036, value: 0
-	//timestamp: 1600037, value: 0
-	//timestamp: 1600038, value: 0
-	//timestamp: 1600039, value: 0
-	//timestamp: 1600040, value: 0
-	//timestamp: 1600041, value: 0
-	//timestamp: 1600042, value: 0
-	//timestamp: 1600043, value: 0
-	//timestamp: 1600044, value: 0
-	//timestamp: 1600045, value: 0
-	//timestamp: 1600046, value: 0
-	//timestamp: 1600047, value: 0
-	//timestamp: 1600048, value: 0
-	//timestamp: 1600049, value: 0
-	//timestamp: 1600050, value: 0
-	//timestamp: 1600051, value: 0
-	//timestamp: 1600052, value: 0
-	//timestamp: 1600053, value: 0
-	//timestamp: 1600054, value: 0
-	//timestamp: 1600055, value: 0
-	//timestamp: 1600056, value: 0
-	//timestamp: 1600057, value: 0
-	//timestamp: 1600058, value: 0
-	//timestamp: 1600059, value: 0
-	//timestamp: 1600060, value: 0
-	//timestamp: 1600061, value: 0
-	//timestamp: 1600062, value: 0
-	//timestamp: 1600063, value: 0
-	//timestamp: 1600064, value: 0
-	//timestamp: 1600065, value: 0
-	//timestamp: 1600066, value: 0
-	//timestamp: 1600067, value: 0
-	//timestamp: 1600068, value: 0
-	//timestamp: 1600069, value: 0
-	//timestamp: 1600070, value: 0
-	//timestamp: 1600071, value: 0
-	//timestamp: 1600072, value: 0
-	//timestamp: 1600073, value: 0
-	//timestamp: 1600074, value: 0
-	//timestamp: 1600075, value: 0
-	//timestamp: 1600076, value: 0
-	//timestamp: 1600077, value: 0
-	//timestamp: 1600078, value: 0
-	//timestamp: 1600079, value: 0
-	//timestamp: 1600080, value: 0
-	//timestamp: 1600081, value: 0
-	//timestamp: 1600082, value: 0
-	//timestamp: 1600083, value: 0
-	//timestamp: 1600084, value: 0
-	//timestamp: 1600085, value: 0
-	//timestamp: 1600086, value: 0
-	//timestamp: 1600087, value: 0
-	//timestamp: 1600088, value: 0
-	//timestamp: 1600089, value: 0
-	//timestamp: 1600090, value: 0
-	//timestamp: 1600091, value: 0
-	//timestamp: 1600092, value: 0
-	//timestamp: 1600093, value: 0
-	//timestamp: 1600094, value: 0
-	//timestamp: 1600095, value: 0
-	//timestamp: 1600096, value: 0
-	//timestamp: 1600097, value: 0
-	//timestamp: 1600098, value: 0
-	//timestamp: 1600099, value: 0
+	//timestamp: 1600000000, value: 0
+	//timestamp: 1600000001, value: 0
+	//timestamp: 1600000002, value: 0
+	//timestamp: 1600000003, value: 0
+	//timestamp: 1600000004, value: 0
+	//timestamp: 1600000005, value: 0
+	//timestamp: 1600000006, value: 0
+	//timestamp: 1600000007, value: 0
+	//timestamp: 1600000008, value: 0
+	//timestamp: 1600000009, value: 0
+	//timestamp: 1600000010, value: 0
+	//timestamp: 1600000011, value: 0
+	//timestamp: 1600000012, value: 0
+	//timestamp: 1600000013, value: 0
+	//timestamp: 1600000014, value: 0
+	//timestamp: 1600000015, value: 0
+	//timestamp: 1600000016, value: 0
+	//timestamp: 1600000017, value: 0
+	//timestamp: 1600000018, value: 0
+	//timestamp: 1600000019, value: 0
+	//timestamp: 1600000020, value: 0
+	//timestamp: 1600000021, value: 0
+	//timestamp: 1600000022, value: 0
+	//timestamp: 1600000023, value: 0
+	//timestamp: 1600000024, value: 0
+	//timestamp: 1600000025, value: 0
+	//timestamp: 1600000026, value: 0
+	//timestamp: 1600000027, value: 0
+	//timestamp: 1600000028, value: 0
+	//timestamp: 1600000029, value: 0
+	//timestamp: 1600000030, value: 0
+	//timestamp: 1600000031, value: 0
+	//timestamp: 1600000032, value: 0
+	//timestamp: 1600000033, value: 0
+	//timestamp: 1600000034, value: 0
+	//timestamp: 1600000035, value: 0
+	//timestamp: 1600000036, value: 0
+	//timestamp: 1600000037, value: 0
+	//timestamp: 1600000038, value: 0
+	//timestamp: 1600000039, value: 0
+	//timestamp: 1600000040, value: 0
+	//timestamp: 1600000041, value: 0
+	//timestamp: 1600000042, value: 0
+	//timestamp: 1600000043, value: 0
+	//timestamp: 1600000044, value: 0
+	//timestamp: 1600000045, value: 0
+	//timestamp: 1600000046, value: 0
+	//timestamp: 1600000047, value: 0
+	//timestamp: 1600000048, value: 0
+	//timestamp: 1600000049, value: 0
+	//timestamp: 1600000050, value: 0
+	//timestamp: 1600000051, value: 0
+	//timestamp: 1600000052, value: 0
+	//timestamp: 1600000053, value: 0
+	//timestamp: 1600000054, value: 0
+	//timestamp: 1600000055, value: 0
+	//timestamp: 1600000056, value: 0
+	//timestamp: 1600000057, value: 0
+	//timestamp: 1600000058, value: 0
+	//timestamp: 1600000059, value: 0
+	//timestamp: 1600000060, value: 0
+	//timestamp: 1600000061, value: 0
+	//timestamp: 1600000062, value: 0
+	//timestamp: 1600000063, value: 0
+	//timestamp: 1600000064, value: 0
+	//timestamp: 1600000065, value: 0
+	//timestamp: 1600000066, value: 0
+	//timestamp: 1600000067, value: 0
+	//timestamp: 1600000068, value: 0
+	//timestamp: 1600000069, value: 0
+	//timestamp: 1600000070, value: 0
+	//timestamp: 1600000071, value: 0
+	//timestamp: 1600000072, value: 0
+	//timestamp: 1600000073, value: 0
+	//timestamp: 1600000074, value: 0
+	//timestamp: 1600000075, value: 0
+	//timestamp: 1600000076, value: 0
+	//timestamp: 1600000077, value: 0
+	//timestamp: 1600000078, value: 0
+	//timestamp: 1600000079, value: 0
+	//timestamp: 1600000080, value: 0
+	//timestamp: 1600000081, value: 0
+	//timestamp: 1600000082, value: 0
+	//timestamp: 1600000083, value: 0
+	//timestamp: 1600000084, value: 0
+	//timestamp: 1600000085, value: 0
+	//timestamp: 1600000086, value: 0
+	//timestamp: 1600000087, value: 0
+	//timestamp: 1600000088, value: 0
+	//timestamp: 1600000089, value: 0
+	//timestamp: 1600000090, value: 0
+	//timestamp: 1600000091, value: 0
+	//timestamp: 1600000092, value: 0
+	//timestamp: 1600000093, value: 0
+	//timestamp: 1600000094, value: 0
+	//timestamp: 1600000095, value: 0
+	//timestamp: 1600000096, value: 0
+	//timestamp: 1600000097, value: 0
+	//timestamp: 1600000098, value: 0
+	//timestamp: 1600000099, value: 0
 }
 
 func ExampleStorage_InsertRows_concurrent_out_of_order() {
-	storage, err := tstorage.NewStorage()
+	storage, err := tstorage.NewStorage(
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
+	)
 	if err != nil {
 		panic(err)
 	}
 
 	// First insert in order to ensure min timestamp
 	if err := storage.InsertRows([]tstorage.Row{
-		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000}},
+		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000000}},
 	}); err != nil {
 		panic(err)
 	}
 
 	var wg sync.WaitGroup
 	// Start insertion in descending order.
-	for i := int64(1600099); i > 1600000; i-- {
+	for i := int64(1600000099); i > 1600000000; i-- {
 		wg.Add(1)
 		go func(timestamp int64) {
 			if err := storage.InsertRows([]tstorage.Row{
@@ -253,7 +260,7 @@ func ExampleStorage_InsertRows_concurrent_out_of_order() {
 	}
 	wg.Wait()
 
-	iterator, size, err := storage.SelectRows("metric1", nil, 1600000, 1600100)
+	iterator, size, err := storage.SelectRows("metric1", nil, 1600000000, 1600000099)
 	if err != nil {
 		panic(err)
 	}
@@ -263,104 +270,104 @@ func ExampleStorage_InsertRows_concurrent_out_of_order() {
 	}
 	// Output:
 	//size: 100
-	//timestamp: 1600000, value: 0
-	//timestamp: 1600001, value: 0
-	//timestamp: 1600002, value: 0
-	//timestamp: 1600003, value: 0
-	//timestamp: 1600004, value: 0
-	//timestamp: 1600005, value: 0
-	//timestamp: 1600006, value: 0
-	//timestamp: 1600007, value: 0
-	//timestamp: 1600008, value: 0
-	//timestamp: 1600009, value: 0
-	//timestamp: 1600010, value: 0
-	//timestamp: 1600011, value: 0
-	//timestamp: 1600012, value: 0
-	//timestamp: 1600013, value: 0
-	//timestamp: 1600014, value: 0
-	//timestamp: 1600015, value: 0
-	//timestamp: 1600016, value: 0
-	//timestamp: 1600017, value: 0
-	//timestamp: 1600018, value: 0
-	//timestamp: 1600019, value: 0
-	//timestamp: 1600020, value: 0
-	//timestamp: 1600021, value: 0
-	//timestamp: 1600022, value: 0
-	//timestamp: 1600023, value: 0
-	//timestamp: 1600024, value: 0
-	//timestamp: 1600025, value: 0
-	//timestamp: 1600026, value: 0
-	//timestamp: 1600027, value: 0
-	//timestamp: 1600028, value: 0
-	//timestamp: 1600029, value: 0
-	//timestamp: 1600030, value: 0
-	//timestamp: 1600031, value: 0
-	//timestamp: 1600032, value: 0
-	//timestamp: 1600033, value: 0
-	//timestamp: 1600034, value: 0
-	//timestamp: 1600035, value: 0
-	//timestamp: 1600036, value: 0
-	//timestamp: 1600037, value: 0
-	//timestamp: 1600038, value: 0
-	//timestamp: 1600039, value: 0
-	//timestamp: 1600040, value: 0
-	//timestamp: 1600041, value: 0
-	//timestamp: 1600042, value: 0
-	//timestamp: 1600043, value: 0
-	//timestamp: 1600044, value: 0
-	//timestamp: 1600045, value: 0
-	//timestamp: 1600046, value: 0
-	//timestamp: 1600047, value: 0
-	//timestamp: 1600048, value: 0
-	//timestamp: 1600049, value: 0
-	//timestamp: 1600050, value: 0
-	//timestamp: 1600051, value: 0
-	//timestamp: 1600052, value: 0
-	//timestamp: 1600053, value: 0
-	//timestamp: 1600054, value: 0
-	//timestamp: 1600055, value: 0
-	//timestamp: 1600056, value: 0
-	//timestamp: 1600057, value: 0
-	//timestamp: 1600058, value: 0
-	//timestamp: 1600059, value: 0
-	//timestamp: 1600060, value: 0
-	//timestamp: 1600061, value: 0
-	//timestamp: 1600062, value: 0
-	//timestamp: 1600063, value: 0
-	//timestamp: 1600064, value: 0
-	//timestamp: 1600065, value: 0
-	//timestamp: 1600066, value: 0
-	//timestamp: 1600067, value: 0
-	//timestamp: 1600068, value: 0
-	//timestamp: 1600069, value: 0
-	//timestamp: 1600070, value: 0
-	//timestamp: 1600071, value: 0
-	//timestamp: 1600072, value: 0
-	//timestamp: 1600073, value: 0
-	//timestamp: 1600074, value: 0
-	//timestamp: 1600075, value: 0
-	//timestamp: 1600076, value: 0
-	//timestamp: 1600077, value: 0
-	//timestamp: 1600078, value: 0
-	//timestamp: 1600079, value: 0
-	//timestamp: 1600080, value: 0
-	//timestamp: 1600081, value: 0
-	//timestamp: 1600082, value: 0
-	//timestamp: 1600083, value: 0
-	//timestamp: 1600084, value: 0
-	//timestamp: 1600085, value: 0
-	//timestamp: 1600086, value: 0
-	//timestamp: 1600087, value: 0
-	//timestamp: 1600088, value: 0
-	//timestamp: 1600089, value: 0
-	//timestamp: 1600090, value: 0
-	//timestamp: 1600091, value: 0
-	//timestamp: 1600092, value: 0
-	//timestamp: 1600093, value: 0
-	//timestamp: 1600094, value: 0
-	//timestamp: 1600095, value: 0
-	//timestamp: 1600096, value: 0
-	//timestamp: 1600097, value: 0
-	//timestamp: 1600098, value: 0
-	//timestamp: 1600099, value: 0
+	//timestamp: 1600000000, value: 0
+	//timestamp: 1600000001, value: 0
+	//timestamp: 1600000002, value: 0
+	//timestamp: 1600000003, value: 0
+	//timestamp: 1600000004, value: 0
+	//timestamp: 1600000005, value: 0
+	//timestamp: 1600000006, value: 0
+	//timestamp: 1600000007, value: 0
+	//timestamp: 1600000008, value: 0
+	//timestamp: 1600000009, value: 0
+	//timestamp: 1600000010, value: 0
+	//timestamp: 1600000011, value: 0
+	//timestamp: 1600000012, value: 0
+	//timestamp: 1600000013, value: 0
+	//timestamp: 1600000014, value: 0
+	//timestamp: 1600000015, value: 0
+	//timestamp: 1600000016, value: 0
+	//timestamp: 1600000017, value: 0
+	//timestamp: 1600000018, value: 0
+	//timestamp: 1600000019, value: 0
+	//timestamp: 1600000020, value: 0
+	//timestamp: 1600000021, value: 0
+	//timestamp: 1600000022, value: 0
+	//timestamp: 1600000023, value: 0
+	//timestamp: 1600000024, value: 0
+	//timestamp: 1600000025, value: 0
+	//timestamp: 1600000026, value: 0
+	//timestamp: 1600000027, value: 0
+	//timestamp: 1600000028, value: 0
+	//timestamp: 1600000029, value: 0
+	//timestamp: 1600000030, value: 0
+	//timestamp: 1600000031, value: 0
+	//timestamp: 1600000032, value: 0
+	//timestamp: 1600000033, value: 0
+	//timestamp: 1600000034, value: 0
+	//timestamp: 1600000035, value: 0
+	//timestamp: 1600000036, value: 0
+	//timestamp: 1600000037, value: 0
+	//timestamp: 1600000038, value: 0
+	//timestamp: 1600000039, value: 0
+	//timestamp: 1600000040, value: 0
+	//timestamp: 1600000041, value: 0
+	//timestamp: 1600000042, value: 0
+	//timestamp: 1600000043, value: 0
+	//timestamp: 1600000044, value: 0
+	//timestamp: 1600000045, value: 0
+	//timestamp: 1600000046, value: 0
+	//timestamp: 1600000047, value: 0
+	//timestamp: 1600000048, value: 0
+	//timestamp: 1600000049, value: 0
+	//timestamp: 1600000050, value: 0
+	//timestamp: 1600000051, value: 0
+	//timestamp: 1600000052, value: 0
+	//timestamp: 1600000053, value: 0
+	//timestamp: 1600000054, value: 0
+	//timestamp: 1600000055, value: 0
+	//timestamp: 1600000056, value: 0
+	//timestamp: 1600000057, value: 0
+	//timestamp: 1600000058, value: 0
+	//timestamp: 1600000059, value: 0
+	//timestamp: 1600000060, value: 0
+	//timestamp: 1600000061, value: 0
+	//timestamp: 1600000062, value: 0
+	//timestamp: 1600000063, value: 0
+	//timestamp: 1600000064, value: 0
+	//timestamp: 1600000065, value: 0
+	//timestamp: 1600000066, value: 0
+	//timestamp: 1600000067, value: 0
+	//timestamp: 1600000068, value: 0
+	//timestamp: 1600000069, value: 0
+	//timestamp: 1600000070, value: 0
+	//timestamp: 1600000071, value: 0
+	//timestamp: 1600000072, value: 0
+	//timestamp: 1600000073, value: 0
+	//timestamp: 1600000074, value: 0
+	//timestamp: 1600000075, value: 0
+	//timestamp: 1600000076, value: 0
+	//timestamp: 1600000077, value: 0
+	//timestamp: 1600000078, value: 0
+	//timestamp: 1600000079, value: 0
+	//timestamp: 1600000080, value: 0
+	//timestamp: 1600000081, value: 0
+	//timestamp: 1600000082, value: 0
+	//timestamp: 1600000083, value: 0
+	//timestamp: 1600000084, value: 0
+	//timestamp: 1600000085, value: 0
+	//timestamp: 1600000086, value: 0
+	//timestamp: 1600000087, value: 0
+	//timestamp: 1600000088, value: 0
+	//timestamp: 1600000089, value: 0
+	//timestamp: 1600000090, value: 0
+	//timestamp: 1600000091, value: 0
+	//timestamp: 1600000092, value: 0
+	//timestamp: 1600000093, value: 0
+	//timestamp: 1600000094, value: 0
+	//timestamp: 1600000095, value: 0
+	//timestamp: 1600000096, value: 0
+	//timestamp: 1600000097, value: 0
+	//timestamp: 1600000098, value: 0
+	//timestamp: 1600000099, value: 0
 }
