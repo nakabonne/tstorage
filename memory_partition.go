@@ -56,13 +56,13 @@ func (m *memoryPartition) insertRows(rows []Row) ([]Row, error) {
 	})
 
 	// TODO: Use rows list instead of slice
-	outOfOrderRows := make([]Row, 0)
+	outdatedRows := make([]Row, 0)
 	maxTimestamp := rows[0].Timestamp
 	var rowsNum int64
 	for i := range rows {
 		row := rows[i]
 		if row.Timestamp < m.minTimestamp() {
-			outOfOrderRows = append(outOfOrderRows, row)
+			outdatedRows = append(outdatedRows, row)
 			continue
 		}
 		if row.Timestamp == 0 {
@@ -83,7 +83,7 @@ func (m *memoryPartition) insertRows(rows []Row) ([]Row, error) {
 		atomic.SwapInt64(&m.maxT, maxTimestamp)
 	}
 
-	return outOfOrderRows, nil
+	return outdatedRows, nil
 }
 
 // selectRows gives back the certain data points within the given range.
