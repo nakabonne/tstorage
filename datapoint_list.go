@@ -151,7 +151,6 @@ type dataPointNode struct {
 	val  *DataPoint
 	next *dataPointNode
 	prev *dataPointNode
-	mu   sync.RWMutex
 }
 
 // value gives back the actual dataPoint of the node.
@@ -160,26 +159,18 @@ func (n *dataPointNode) value() *DataPoint {
 }
 
 func (n *dataPointNode) setNext(node *dataPointNode) {
-	n.mu.Lock()
-	defer n.mu.Unlock()
 	n.next = node
 }
 
 func (n *dataPointNode) getNext() *dataPointNode {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
 	return n.next
 }
 
 func (n *dataPointNode) setPrev(node *dataPointNode) {
-	n.mu.Lock()
-	defer n.mu.Unlock()
 	n.prev = node
 }
 
 func (n *dataPointNode) getPrev() *dataPointNode {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
 	return n.prev
 }
 
