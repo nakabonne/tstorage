@@ -50,8 +50,8 @@ type Storage interface {
 	// InsertRows ingests the given rows to the time-series storage.
 	// If a timestamp isn't specified, it uses the machine's local timestamp in UTC.
 	InsertRows(rows []Row) error
-	// Wait waits until all tasks got done.
-	Wait()
+	// Close flushes all data points within the memory partitions into the backend.
+	Close()
 }
 
 // Reader provides reading access to time series data.
@@ -92,6 +92,7 @@ type Option func(*storage)
 
 // WithDataPath specifies the path to directory that stores time-series data.
 // Use this to make time-series data persistent on disk.
+//
 // Defaults to empty string which means no data will get persisted.
 func WithDataPath(dataPath string) Option {
 	return func(s *storage) {
@@ -104,6 +105,7 @@ func WithDataPath(dataPath string) Option {
 // A partition is a chunk of time-series data with the timestamp range.
 // It acts as a fully independent database containing all data
 // points for its time range.
+//
 // Defaults to 1h
 func WithPartitionDuration(duration time.Duration) Option {
 	return func(s *storage) {
@@ -112,6 +114,7 @@ func WithPartitionDuration(duration time.Duration) Option {
 }
 
 // WithTimestampPrecision specifies the precision of timestamps to be used by all operations.
+//
 // Defaults to Nanoseconds
 func WithTimestampPrecision(precision TimestampPrecision) Option {
 	return func(s *storage) {
@@ -123,6 +126,7 @@ func WithTimestampPrecision(precision TimestampPrecision) Option {
 //
 // The storage limits the number of concurrent goroutines to prevent from out of memory
 // errors and CPU trashing even if too many goroutines attempt to write.
+//
 // Defaults to 30m.
 func WithWriteTimeout(timeout time.Duration) Option {
 	return func(s *storage) {
@@ -131,6 +135,8 @@ func WithWriteTimeout(timeout time.Duration) Option {
 }
 
 // WithLogger specifies the logger to emit verbose output.
+//
+// Defaults to a logger implementation that does nothing.
 func WithLogger(logger Logger) Option {
 	return func(s *storage) {
 		s.logger = logger
@@ -320,7 +326,7 @@ func (s *storage) SelectRows(metric string, labels []Label, start, end int64) (D
 	return mergedList.newIterator(), mergedList.size(), nil
 }
 
-func (s *storage) Wait() {
+func (s *storage) Close() {
 	s.wg.Wait()
 	// TODO: Prevent from new goroutines calling InsertRows(), for graceful shutdown.
 	// FIXME: Flush data points within the all memory partition into the backend.

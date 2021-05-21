@@ -68,7 +68,6 @@ func (m *memoryPartition) insertRows(rows []Row) ([]Row, error) {
 		atomic.StoreInt64(&m.minT, min)
 	})
 
-	// TODO: Use rows list instead of slice
 	outdatedRows := make([]Row, 0)
 	maxTimestamp := rows[0].Timestamp
 	var rowsNum int64
