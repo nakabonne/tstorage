@@ -19,7 +19,7 @@ func BenchmarkStorage_SelectRows(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 1; i < b.N; i++ {
-		_, _, _ = storage.SelectRows("metric1", nil, 1, 100000)
+		_, _, _ = storage.SelectDataPoints("metric1", nil, 1, 100000)
 	}
 }
 

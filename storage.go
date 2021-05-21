@@ -56,16 +56,18 @@ type Storage interface {
 
 // Reader provides reading access to time series data.
 type Reader interface {
-	// SelectRows gives back an iterator object to traverse data points within the given start-end range.
+	// SelectDataPoints gives back an iterator object to traverse data points within the given start-end range.
 	// Keep in mind that start is inclusive, end is exclusive, and both must be Unix timestamp.
 	// Typically the given iterator can be used to iterate over the data points, like:
 	/*
-		iterator, _, _ := storage.SelectRows(labels, 1600000000, 1600000001)
+		iterator, _, _ := storage.SelectDataPoints(labels, 1600000000, 1600000001)
 		for iterator.next() {
 			fmt.Printf("value: %v\n", iterator.value())
 		}
 	*/
-	SelectRows(metric string, labels []Label, start, end int64) (iterator DataPointIterator, size int, err error)
+	SelectDataPoints(metric string, labels []Label, start, end int64) (iterator DataPointIterator, size int, err error)
+	// SelectValues gives back a slice of values.
+	SelectValues(metric string, labels []Label, start, end int64) (iterator []float64, err error)
 }
 
 // Row includs a data point along with properties to identify a kind of metrics.
@@ -289,7 +291,8 @@ func (s *storage) getPartition() partition {
 	return p
 }
 
-func (s *storage) SelectRows(metric string, labels []Label, start, end int64) (DataPointIterator, int, error) {
+// FIXME: Return []DataPoint
+func (s *storage) SelectDataPoints(metric string, labels []Label, start, end int64) (DataPointIterator, int, error) {
 	if metric == "" {
 		return nil, 0, fmt.Errorf("metric must be set")
 	}
@@ -324,6 +327,11 @@ func (s *storage) SelectRows(metric string, labels []Label, start, end int64) (D
 		return nil, 0, err
 	}
 	return mergedList.newIterator(), mergedList.size(), nil
+}
+
+// FIXME: Implement SelectValues
+func (s *storage) SelectValues(metric string, labels []Label, start, end int64) ([]float64, error) {
+	return nil, nil
 }
 
 func (s *storage) Close() {

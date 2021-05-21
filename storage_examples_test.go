@@ -22,7 +22,7 @@ func ExampleStorage_InsertRows_simple() {
 	if err != nil {
 		panic(err)
 	}
-	iterator, size, err := storage.SelectRows("metric1", nil, 1600000000, 1600000001)
+	iterator, size, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000001)
 	if err != nil {
 		panic(err)
 	}
@@ -72,7 +72,7 @@ func ExampleStorage_InsertRows_SelectRows_concurrent() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				iterator, _, err := storage.SelectRows("metric1", nil, 1600000000, 1600010000)
+				iterator, _, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600010000)
 				if errors.Is(err, tstorage.ErrNoDataPoints) {
 					return
 				}
@@ -118,7 +118,7 @@ func ExampleStorage_InsertRows_concurrent() {
 	}
 	wg.Wait()
 
-	iterator, size, err := storage.SelectRows("metric1", nil, 1600000000, 1600000100)
+	iterator, size, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000100)
 	if err != nil {
 		panic(err)
 	}
@@ -260,7 +260,7 @@ func ExampleStorage_InsertRows_concurrent_out_of_order() {
 	}
 	wg.Wait()
 
-	iterator, size, err := storage.SelectRows("metric1", nil, 1600000000, 1600000099)
+	iterator, size, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000099)
 	if err != nil {
 		panic(err)
 	}

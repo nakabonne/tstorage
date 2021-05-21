@@ -107,7 +107,7 @@ func Test_storage_SelectRows(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iterator, gotSize, err := tt.storage.SelectRows(tt.metric, tt.labels, tt.start, tt.end)
+			iterator, gotSize, err := tt.storage.SelectDataPoints(tt.metric, tt.labels, tt.start, tt.end)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.wantSize, gotSize)
 			got := []DataPoint{}
