@@ -2,6 +2,7 @@ package tstorage
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -250,3 +251,43 @@ func TestSelectAll(t *testing.T) {
 	}
 }
 */
+
+func Test_toUnix(t *testing.T) {
+	tests := []struct {
+		name      string
+		t         time.Time
+		precision TimestampPrecision
+		want      int64
+	}{
+		{
+			name:      "to nanosecond",
+			t:         time.Unix(1600000000, 0),
+			precision: Nanoseconds,
+			want:      1600000000000000000,
+		},
+		{
+			name:      "to microsecond",
+			t:         time.Unix(1600000000, 0),
+			precision: Microseconds,
+			want:      1600000000000000,
+		},
+		{
+			name:      "to millisecond",
+			t:         time.Unix(1600000000, 0),
+			precision: Milliseconds,
+			want:      1600000000000,
+		},
+		{
+			name:      "to second",
+			t:         time.Unix(1600000000, 0),
+			precision: Seconds,
+			want:      1600000000,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toUnix(tt.t, tt.precision)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

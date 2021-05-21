@@ -1,5 +1,5 @@
 test:
-	go test -race -v -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt -benchtime=1s -benchmem -bench=. ./...
+	go test -race -v -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt -benchtime=0.1s -benchmem -bench=. ./...
 
 test-bench:
 	go test -benchtime=4s -benchmem -bench=. -o=pprof/test.bin  -cpuprofile=pprof/cpu.out -memprofile=pprof/mem.out .

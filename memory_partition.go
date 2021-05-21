@@ -79,7 +79,7 @@ func (m *memoryPartition) insertRows(rows []Row) ([]Row, error) {
 			continue
 		}
 		if row.Timestamp == 0 {
-			row.Timestamp = now(m.timestampPrecision)
+			row.Timestamp = toUnix(time.Now(), m.timestampPrecision)
 		}
 		if row.Timestamp > maxTimestamp {
 			maxTimestamp = row.Timestamp
@@ -99,18 +99,16 @@ func (m *memoryPartition) insertRows(rows []Row) ([]Row, error) {
 	return outdatedRows, nil
 }
 
-func now(precision TimestampPrecision) int64 {
-	nowNano := time.Now().UTC().UnixNano()
+func toUnix(t time.Time, precision TimestampPrecision) int64 {
 	switch precision {
 	case Nanoseconds:
-		return nowNano
+		return t.UnixNano()
 	case Microseconds:
-		return nowNano / 1e3
+		return t.UnixNano() / 1e3
 	case Milliseconds:
-		return nowNano / 1e6
+		return t.UnixNano() / 1e6
 	case Seconds:
-		// FIXME: Impl
-		return 0
+		return t.Unix()
 	default:
 		return 0
 	}
