@@ -1,5 +1,10 @@
 package tstorage
 
+import (
+	"os"
+	"sync"
+)
+
 type walOperation byte
 
 const (
@@ -16,4 +21,15 @@ type wal interface {
 type walEntry struct {
 	operation walOperation
 	rows      []Row
+}
+
+type nopWAL struct {
+	filename string
+	f        *os.File
+	mu       sync.Mutex
+}
+
+func (f *nopWAL) append(entry walEntry) error {
+	// Do nothing
+	return nil
 }

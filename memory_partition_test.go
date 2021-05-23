@@ -10,7 +10,7 @@ import (
 func Test_memoryPartition_InsertRows(t *testing.T) {
 	tests := []struct {
 		name               string
-		memoryPartition    memoryPartition
+		memoryPartition    *memoryPartition
 		rows               []Row
 		wantErr            bool
 		wantDataPoints     []DataPoint
@@ -18,7 +18,7 @@ func Test_memoryPartition_InsertRows(t *testing.T) {
 	}{
 		{
 			name:            "insert in-order rows",
-			memoryPartition: memoryPartition{},
+			memoryPartition: newMemoryPartition(nil, 0, "").(*memoryPartition),
 			rows: []Row{
 				{Metric: "metric1", DataPoint: DataPoint{Timestamp: 1, Value: 0.1}},
 				{Metric: "metric1", DataPoint: DataPoint{Timestamp: 2, Value: 0.1}},
@@ -33,8 +33,8 @@ func Test_memoryPartition_InsertRows(t *testing.T) {
 		},
 		{
 			name: "insert out-of-order rows",
-			memoryPartition: func() memoryPartition {
-				m := memoryPartition{}
+			memoryPartition: func() *memoryPartition {
+				m := newMemoryPartition(nil, 0, "").(*memoryPartition)
 				m.insertRows([]Row{
 					{Metric: "metric1", DataPoint: DataPoint{Timestamp: 2, Value: 0.1}},
 				})
@@ -75,7 +75,7 @@ func Test_memoryPartition_SelectRows(t *testing.T) {
 		labels          []Label
 		start           int64
 		end             int64
-		memoryPartition memoryPartition
+		memoryPartition *memoryPartition
 		want            []DataPoint
 	}{
 		{
@@ -83,7 +83,7 @@ func Test_memoryPartition_SelectRows(t *testing.T) {
 			metric:          "unknown",
 			start:           1,
 			end:             2,
-			memoryPartition: memoryPartition{},
+			memoryPartition: newMemoryPartition(nil, 0, "").(*memoryPartition),
 			want:            []DataPoint{},
 		},
 		{
@@ -91,8 +91,8 @@ func Test_memoryPartition_SelectRows(t *testing.T) {
 			metric: "metric1",
 			start:  0,
 			end:    3,
-			memoryPartition: func() memoryPartition {
-				m := memoryPartition{}
+			memoryPartition: func() *memoryPartition {
+				m := newMemoryPartition(nil, 0, "").(*memoryPartition)
 				m.insertRows([]Row{
 					{
 						Metric: "metric1",

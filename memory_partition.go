@@ -26,6 +26,9 @@ type memoryPartition struct {
 }
 
 func newMemoryPartition(wal wal, partitionDuration time.Duration, precision TimestampPrecision) partition {
+	if wal == nil {
+		wal = &nopWAL{}
+	}
 	var d int64
 	switch precision {
 	case Nanoseconds:
@@ -36,6 +39,8 @@ func newMemoryPartition(wal wal, partitionDuration time.Duration, precision Time
 		d = partitionDuration.Milliseconds()
 	case Seconds:
 		d = int64(partitionDuration.Seconds())
+	default:
+		d = partitionDuration.Nanoseconds()
 	}
 	return &memoryPartition{
 		partitionDuration:  d,
@@ -49,12 +54,10 @@ func (m *memoryPartition) insertRows(rows []Row) ([]Row, error) {
 	if len(rows) == 0 {
 		return nil, fmt.Errorf("no rows given")
 	}
-	if m.wal != nil {
-		m.wal.append(walEntry{
-			operation: operationInsert,
-			rows:      rows,
-		})
-	}
+	m.wal.append(walEntry{
+		operation: operationInsert,
+		rows:      rows,
+	})
 
 	// Set min timestamp at only first.
 	m.once.Do(func() {
@@ -109,7 +112,7 @@ func toUnix(t time.Time, precision TimestampPrecision) int64 {
 	case Seconds:
 		return t.Unix()
 	default:
-		return 0
+		return t.UnixNano()
 	}
 }
 
