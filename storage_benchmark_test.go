@@ -5,13 +5,13 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func BenchmarkStorage_SelectRows(b *testing.B) {
 	storage, err := NewStorage()
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(b, err)
 	for i := 1; i < 100000; i++ {
 		storage.InsertRows([]Row{
 			{Metric: "metric1", DataPoint: DataPoint{Timestamp: int64(i), Value: 0.1}},
@@ -25,9 +25,7 @@ func BenchmarkStorage_SelectRows(b *testing.B) {
 
 func BenchmarkStorage_InsertRows(b *testing.B) {
 	storage, err := NewStorage()
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(b, err)
 	b.ResetTimer()
 	for i := 1; i < b.N; i++ {
 		storage.InsertRows([]Row{
@@ -50,9 +48,7 @@ func BenchmarkStorage_InsertRowsSlice(b *testing.B) {
 	storage, err := NewStorage(
 		withNewHeadPartition,
 	)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(b, err)
 
 	b.ResetTimer()
 	for i := 1; i < b.N; i++ {
