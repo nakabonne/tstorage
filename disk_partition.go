@@ -101,10 +101,10 @@ func (d *diskPartition) insertRows(_ []Row) ([]Row, error) {
 	return nil, fmt.Errorf("can't insert rows into disk partition")
 }
 
-func (d *diskPartition) selectRows(metric string, labels []Label, start, end int64) dataPointList {
+func (d *diskPartition) selectRows(metric string, labels []Label, start, end int64) []*DataPoint {
 	// FIXME: Implement selectRows from disk partition
 	fmt.Println("select rows for disk partition isn't implemented yet")
-	return newDataPointList(nil, nil, 0)
+	return nil
 }
 
 func (d *diskPartition) selectAll() []Row {

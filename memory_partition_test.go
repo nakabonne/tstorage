@@ -13,7 +13,7 @@ func Test_memoryPartition_InsertRows(t *testing.T) {
 		memoryPartition    *memoryPartition
 		rows               []Row
 		wantErr            bool
-		wantDataPoints     []DataPoint
+		wantDataPoints     []*DataPoint
 		wantOutOfOrderRows []Row
 	}{
 		{
@@ -24,7 +24,7 @@ func Test_memoryPartition_InsertRows(t *testing.T) {
 				{Metric: "metric1", DataPoint: DataPoint{Timestamp: 2, Value: 0.1}},
 				{Metric: "metric1", DataPoint: DataPoint{Timestamp: 3, Value: 0.1}},
 			},
-			wantDataPoints: []DataPoint{
+			wantDataPoints: []*DataPoint{
 				{Timestamp: 1, Value: 0.1},
 				{Timestamp: 2, Value: 0.1},
 				{Timestamp: 3, Value: 0.1},
@@ -43,7 +43,7 @@ func Test_memoryPartition_InsertRows(t *testing.T) {
 			rows: []Row{
 				{Metric: "metric1", DataPoint: DataPoint{Timestamp: 1, Value: 0.1}},
 			},
-			wantDataPoints: []DataPoint{
+			wantDataPoints: []*DataPoint{
 				{Timestamp: 2, Value: 0.1},
 			},
 			wantOutOfOrderRows: []Row{
@@ -57,12 +57,7 @@ func Test_memoryPartition_InsertRows(t *testing.T) {
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.wantOutOfOrderRows, gotOutOfOrder)
 
-			list := tt.memoryPartition.selectRows("metric1", nil, 0, 4)
-			iterator := list.newIterator()
-			got := []DataPoint{}
-			for iterator.Next() {
-				got = append(got, *iterator.DataPoint())
-			}
+			got := tt.memoryPartition.selectRows("metric1", nil, 0, 4)
 			assert.Equal(t, tt.wantDataPoints, got)
 		})
 	}
@@ -76,7 +71,7 @@ func Test_memoryPartition_SelectRows(t *testing.T) {
 		start           int64
 		end             int64
 		memoryPartition *memoryPartition
-		want            []DataPoint
+		want            []*DataPoint
 	}{
 		{
 			name:            "given non-exist metric name",
@@ -84,13 +79,13 @@ func Test_memoryPartition_SelectRows(t *testing.T) {
 			start:           1,
 			end:             2,
 			memoryPartition: newMemoryPartition(nil, 0, "").(*memoryPartition),
-			want:            []DataPoint{},
+			want:            []*DataPoint{},
 		},
 		{
 			name:   "select multiple points",
 			metric: "metric1",
-			start:  0,
-			end:    3,
+			start:  1,
+			end:    4,
 			memoryPartition: func() *memoryPartition {
 				m := newMemoryPartition(nil, 0, "").(*memoryPartition)
 				m.insertRows([]Row{
@@ -118,7 +113,7 @@ func Test_memoryPartition_SelectRows(t *testing.T) {
 				})
 				return m
 			}(),
-			want: []DataPoint{
+			want: []*DataPoint{
 				{
 					Timestamp: 1,
 					Value:     0.1,
@@ -136,12 +131,7 @@ func Test_memoryPartition_SelectRows(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			list := tt.memoryPartition.selectRows(tt.metric, tt.labels, tt.start, tt.end)
-			iterator := list.newIterator()
-			got := []DataPoint{}
-			for iterator.Next() {
-				got = append(got, *iterator.DataPoint())
-			}
+			got := tt.memoryPartition.selectRows(tt.metric, tt.labels, tt.start, tt.end)
 			assert.Equal(t, tt.want, got)
 		})
 	}

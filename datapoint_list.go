@@ -6,6 +6,8 @@ import (
 	"sync/atomic"
 )
 
+// TODO: Remove data point list
+
 // dataPointList represents a linked list for data points.
 // Each dataPoint is arranged in order of oldest to newest.
 // That is, the head node is always the oldest, the tail node is the newest.
@@ -16,10 +18,10 @@ type dataPointList interface {
 	size() int
 	// newIterator gives back the iterator object fot this list.
 	// If you need to inspect all nodes within the list, use this one.
-	newIterator() DataPointIterator
+	newIterator() dataPointIterator
 }
 
-// DataPointIterator represents an iterator for data point list. It allows you to
+// dataPointIterator represents an iterator for data point list. It allows you to
 // iterate over the data point list. Each dataPoint is arranged in order of oldest
 // to newest. The basic usage is:
 /*
@@ -28,7 +30,7 @@ type dataPointList interface {
     // Do something with dataPoint
   }
 */
-type DataPointIterator interface {
+type dataPointIterator interface {
 	// Next positions the iterator at the next node in the list.
 	// It will be positioned at the head on the first call.
 	// The return value will be true if a value can be read from the list.
@@ -132,7 +134,7 @@ func (l *dataPointListImpl) size() int {
 	return int(atomic.LoadInt64(&l.numPoints))
 }
 
-func (l *dataPointListImpl) newIterator() DataPointIterator {
+func (l *dataPointListImpl) newIterator() dataPointIterator {
 	l.mu.RLock()
 	head := l.head
 	l.mu.RUnlock()

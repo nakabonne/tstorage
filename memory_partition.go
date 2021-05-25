@@ -2,6 +2,7 @@ package tstorage
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -117,7 +118,7 @@ func toUnix(t time.Time, precision TimestampPrecision) int64 {
 }
 
 // selectRows gives back the certain data points within the given range.
-func (m *memoryPartition) selectRows(metric string, labels []Label, start, end int64) dataPointList {
+func (m *memoryPartition) selectRows(metric string, labels []Label, start, end int64) []*DataPoint {
 	name := marshalMetricName(metric, labels)
 	mt := m.getMetric(name)
 	return mt.selectPoints(start, end)
@@ -129,8 +130,9 @@ func (m *memoryPartition) getMetric(name string) *metric {
 	value, ok := m.metrics.Load(name)
 	if !ok {
 		value = &metric{
-			name:   name,
-			points: newDataPointList(nil, nil, 0),
+			name:             name,
+			points:           make([]*DataPoint, 0, 1000),
+			outOfOrderPoints: make([]*DataPoint, 0),
 		}
 		m.metrics.Store(name, value)
 	}
@@ -139,29 +141,31 @@ func (m *memoryPartition) getMetric(name string) *metric {
 
 func (m *memoryPartition) selectAll() []Row {
 	rows := make([]Row, 0, m.size())
-	m.metrics.Range(func(key, value interface{}) bool {
-		mt, ok := value.(*metric)
-		if !ok {
-			return false
-		}
-		k, ok := key.(string)
-		if !ok {
-			return false
-		}
-		labels := unmarshalMetricName(k)
-		iterator := mt.points.newIterator()
-		for iterator.Next() {
-			point := iterator.DataPoint()
-			rows = append(rows, Row{
-				Labels: labels,
-				DataPoint: DataPoint{
-					Timestamp: point.Timestamp,
-					Value:     point.Value,
-				},
-			})
-		}
-		return true
-	})
+	/*
+		m.metrics.Range(func(key, value interface{}) bool {
+			mt, ok := value.(*metric)
+			if !ok {
+				return false
+			}
+			k, ok := key.(string)
+			if !ok {
+				return false
+			}
+			labels := unmarshalMetricName(k)
+			iterator := mt.points.newIterator()
+			for iterator.Next() {
+				point := iterator.DataPoint()
+				rows = append(rows, Row{
+					Labels: labels,
+					DataPoint: DataPoint{
+						Timestamp: point.Timestamp,
+						Value:     point.Value,
+					},
+				})
+			}
+			return true
+		})
+	*/
 	return rows
 }
 
@@ -183,45 +187,74 @@ func (m *memoryPartition) active() bool {
 
 // metric has a list of data points that belong to the metric
 type metric struct {
-	name   string
-	points dataPointList
-	mu     sync.RWMutex
+	name         string
+	size         int64
+	minTimestamp int64
+	maxTimestamp int64
+	// points must kept in order
+	points []*DataPoint
+	// TODO: Merge out-of-order points when flushing
+	outOfOrderPoints []*DataPoint
+	mu               sync.RWMutex
 }
 
 func (m *metric) insertPoint(point *DataPoint) {
-	m.points.insert(point)
+	size := atomic.LoadInt64(&m.size)
+	// TODO: Consider to stop using mutex every time.
+	//   Instead, fix the capacity of points slice, kind of like:
+	/*
+		m.points := make([]*DataPoint, 1000)
+		for i := 0; i < 1000; i++ {
+			m.points[i] = point
+		}
+	*/
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// First insertion
+	if size == 0 {
+		m.points = append(m.points, point)
+		atomic.StoreInt64(&m.minTimestamp, point.Timestamp)
+		atomic.StoreInt64(&m.maxTimestamp, point.Timestamp)
+		atomic.AddInt64(&m.size, 1)
+		return
+	}
+	// Insert point in order
+	if m.points[size-1].Timestamp < point.Timestamp {
+		m.points = append(m.points, point)
+		atomic.StoreInt64(&m.maxTimestamp, point.Timestamp)
+		atomic.AddInt64(&m.size, 1)
+		return
+	}
+
+	m.outOfOrderPoints = append(m.outOfOrderPoints, point)
 }
 
-// selectPoints returns a new dataPointList. It just takes head and tail out and sets them to the new one.
-func (m *metric) selectPoints(start, end int64) dataPointList {
-	// FIXME: Consider using binary search
-	//   using slice may be better.
-	//   Also, think about how to mutex
-	// Position the iterator at the node to be head.
-	var head *dataPointNode
-	iterator := m.points.newIterator()
-	for iterator.Next() {
-		current := iterator.node()
-		if current.value().Timestamp < start {
-			continue
-		}
-		head = current
-		break
+// selectPoints returns a new slice by re-slicing with [startIdx:endIdx].
+func (m *metric) selectPoints(start, end int64) []*DataPoint {
+	size := atomic.LoadInt64(&m.size)
+	minTimestamp := atomic.LoadInt64(&m.minTimestamp)
+	maxTimestamp := atomic.LoadInt64(&m.maxTimestamp)
+
+	var startIdx, endIdx int
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if start <= minTimestamp {
+		startIdx = 0
+	} else {
+		// Use binary search because m.points are in-order.
+		startIdx = sort.Search(int(size), func(i int) bool {
+			return m.points[i].Timestamp >= start
+		})
 	}
 
-	// Position the iterator at the node to be tail.
-	var tail *dataPointNode
-	var num int64 = 1
-	prev := head
-	for iterator.Next() {
-		num++
-		current := iterator.node()
-		if current.value().Timestamp < end {
-			prev = current
-			continue
-		}
-		tail = prev
-		break
+	if end >= maxTimestamp {
+		endIdx = int(size)
+	} else {
+		// Use binary search because m.points are in-order.
+		endIdx = sort.Search(int(size), func(i int) bool {
+			return m.points[i].Timestamp < end
+		}) + 1
 	}
-	return newDataPointList(head, tail, num)
+	return m.points[startIdx:endIdx]
 }
