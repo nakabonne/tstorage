@@ -9,20 +9,19 @@ import (
 
 func Test_storage_SelectRows(t *testing.T) {
 	tests := []struct {
-		name     string
-		storage  storage
-		metric   string
-		labels   []Label
-		start    int64
-		end      int64
-		want     []DataPoint
-		wantSize int
-		wantErr  bool
+		name    string
+		storage storage
+		metric  string
+		labels  []Label
+		start   int64
+		end     int64
+		want    []*DataPoint
+		wantErr bool
 	}{
 		{
 			name:   "select from single partition",
 			metric: "metric1",
-			start:  0,
+			start:  1,
 			end:    4,
 			storage: func() storage {
 				part1 := newMemoryPartition(nil, 1*time.Hour, Seconds)
@@ -41,17 +40,16 @@ func Test_storage_SelectRows(t *testing.T) {
 					workersLimitCh: make(chan struct{}, defaultWorkersLimit),
 				}
 			}(),
-			want: []DataPoint{
+			want: []*DataPoint{
 				{Timestamp: 1},
 				{Timestamp: 2},
 				{Timestamp: 3},
 			},
-			wantSize: 3,
 		},
 		{
 			name:   "select from three partitions",
 			metric: "metric1",
-			start:  0,
+			start:  1,
 			end:    10,
 			storage: func() storage {
 				part1 := newMemoryPartition(nil, 1*time.Hour, Seconds)
@@ -91,7 +89,7 @@ func Test_storage_SelectRows(t *testing.T) {
 					workersLimitCh: make(chan struct{}, defaultWorkersLimit),
 				}
 			}(),
-			want: []DataPoint{
+			want: []*DataPoint{
 				{Timestamp: 1},
 				{Timestamp: 2},
 				{Timestamp: 3},
@@ -102,18 +100,13 @@ func Test_storage_SelectRows(t *testing.T) {
 				{Timestamp: 8},
 				{Timestamp: 9},
 			},
-			wantSize: 9,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iterator, gotSize, err := tt.storage.SelectDataPoints(tt.metric, tt.labels, tt.start, tt.end)
+			got, err := tt.storage.SelectDataPoints(tt.metric, tt.labels, tt.start, tt.end)
 			assert.Equal(t, tt.wantErr, err != nil)
-			assert.Equal(t, tt.wantSize, gotSize)
-			got := []DataPoint{}
-			for iterator.Next() {
-				got = append(got, *iterator.DataPoint())
-			}
+			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.want, got)
 		})
 	}

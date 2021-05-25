@@ -56,18 +56,11 @@ type Storage interface {
 
 // Reader provides reading access to time series data.
 type Reader interface {
-	// SelectDataPoints gives back an iterator object to traverse data points within the given start-end range.
+	// SelectDataPoints gives back a list of data points  within the given start-end range.
 	// Keep in mind that start is inclusive, end is exclusive, and both must be Unix timestamp.
-	// Typically the given iterator can be used to iterate over the data points, like:
-	/*
-		iterator, _, _ := storage.SelectDataPoints(labels, 1600000000, 1600000001)
-		for iterator.next() {
-			fmt.Printf("value: %v\n", iterator.value())
-		}
-	*/
-	SelectDataPoints(metric string, labels []Label, start, end int64) (iterator DataPointIterator, size int, err error)
-	// SelectValues gives back a slice of values.
-	SelectValues(metric string, labels []Label, start, end int64) (iterator []float64, err error)
+	SelectDataPoints(metric string, labels []Label, start, end int64) (points []*DataPoint, err error)
+	// SelectValues gives back a list of actual values.
+	SelectValues(metric string, labels []Label, start, end int64) (values []float64, err error)
 }
 
 // Row includs a data point along with properties to identify a kind of metrics.
@@ -291,22 +284,21 @@ func (s *storage) getPartition() partition {
 	return p
 }
 
-// FIXME: Return []DataPoint
-func (s *storage) SelectDataPoints(metric string, labels []Label, start, end int64) (DataPointIterator, int, error) {
+func (s *storage) SelectDataPoints(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
 	if metric == "" {
-		return nil, 0, fmt.Errorf("metric must be set")
+		return nil, fmt.Errorf("metric must be set")
 	}
 	if start >= end {
-		return nil, 0, fmt.Errorf("thg given start is greater than end")
+		return nil, fmt.Errorf("thg given start is greater than end")
 	}
-	pointLists := make([]dataPointList, 0)
+	points := make([]*DataPoint, 0)
 
 	// Iterate over all partitions from the newest one.
 	iterator := s.partitionList.newIterator()
 	for iterator.next() {
 		part := iterator.value()
 		if part == nil {
-			return nil, 0, fmt.Errorf("unexpected empty partition found")
+			return nil, fmt.Errorf("unexpected empty partition found")
 		}
 		if part.maxTimestamp() < start {
 			// No need to keep going anymore
@@ -315,18 +307,14 @@ func (s *storage) SelectDataPoints(metric string, labels []Label, start, end int
 		if part.minTimestamp() > end {
 			continue
 		}
-		list := part.selectRows(metric, labels, start, end)
+		ps := part.selectRows(metric, labels, start, end)
 		// in order to keep the order in ascending.
-		pointLists = append([]dataPointList{list}, pointLists...)
+		points = append(ps, points...)
 	}
-	if len(pointLists) == 0 {
-		return nil, 0, ErrNoDataPoints
+	if len(points) == 0 {
+		return nil, ErrNoDataPoints
 	}
-	mergedList, err := mergeDataPointLists(pointLists...)
-	if err != nil {
-		return nil, 0, err
-	}
-	return mergedList.newIterator(), mergedList.size(), nil
+	return points, nil
 }
 
 // FIXME: Implement SelectValues

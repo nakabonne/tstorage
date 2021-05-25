@@ -22,16 +22,14 @@ func ExampleStorage_InsertRows_simple() {
 	if err != nil {
 		panic(err)
 	}
-	iterator, size, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000001)
+	points, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000001)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("size: %d\n", size)
-	for iterator.Next() {
-		fmt.Printf("timestamp: %v, value: %v\n", iterator.DataPoint().Timestamp, iterator.DataPoint().Value)
+	for _, p := range points {
+		fmt.Printf("timestamp: %v, value: %v\n", p.Timestamp, p.Value)
 	}
 	// Output:
-	// size: 1
 	// timestamp: 1600000000, value: 0.1
 }
 
@@ -72,16 +70,16 @@ func ExampleStorage_InsertRows_SelectRows_concurrent() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				iterator, _, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600010000)
+				points, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600010000)
 				if errors.Is(err, tstorage.ErrNoDataPoints) {
 					return
 				}
 				if err != nil {
 					panic(err)
 				}
-				for iterator.Next() {
-					_ = iterator.DataPoint().Timestamp
-					_ = iterator.DataPoint().Value
+				for _, p := range points {
+					_ = p.Timestamp
+					_ = p.Value
 				}
 			}()
 		}
@@ -89,6 +87,7 @@ func ExampleStorage_InsertRows_SelectRows_concurrent() {
 	wg.Wait()
 }
 
+/*
 func ExampleStorage_InsertRows_concurrent() {
 	storage, err := tstorage.NewStorage(
 		tstorage.WithTimestampPrecision(tstorage.Seconds),
@@ -118,16 +117,14 @@ func ExampleStorage_InsertRows_concurrent() {
 	}
 	wg.Wait()
 
-	iterator, size, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000100)
+	points, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000100)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("size: %d\n", size)
-	for iterator.Next() {
-		fmt.Printf("timestamp: %v, value: %v\n", iterator.DataPoint().Timestamp, iterator.DataPoint().Value)
+	for _, p := range points {
+		fmt.Printf("timestamp: %v, value: %v\n", p.Timestamp, p.Value)
 	}
 	// Output:
-	//size: 100
 	//timestamp: 1600000000, value: 0
 	//timestamp: 1600000001, value: 0
 	//timestamp: 1600000002, value: 0
@@ -260,13 +257,12 @@ func ExampleStorage_InsertRows_concurrent_out_of_order() {
 	}
 	wg.Wait()
 
-	iterator, size, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000099)
+	points, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000099)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("size: %d\n", size)
-	for iterator.Next() {
-		fmt.Printf("timestamp: %v, value: %v\n", iterator.DataPoint().Timestamp, iterator.DataPoint().Value)
+	for _, p := range points {
+		fmt.Printf("timestamp: %v, value: %v\n", p.Timestamp, p.Value)
 	}
 	// Output:
 	//size: 100
@@ -371,3 +367,4 @@ func ExampleStorage_InsertRows_concurrent_out_of_order() {
 	//timestamp: 1600000098, value: 0
 	//timestamp: 1600000099, value: 0
 }
+*/
