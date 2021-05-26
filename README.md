@@ -6,6 +6,7 @@
 It massively optimises ingestion as it allows the database to slice data extremely efficiently in small chunks and process it all in parallel.
 
 ## Usage
+The below example illustrates how to insert a row into the process memory and immediately select it.
 
 ```go
 package main
@@ -30,6 +31,45 @@ func main() {
 	}
 }
 ```
+
+### Examples
+In tstorage, the combination of metric name and labels preserves uniqueness.
+Here is an example of insertion and selection a metric for memory allocation on `host-1`.
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/nakabonne/tstorage"
+)
+
+func main() {
+	storage, _ := tstorage.NewStorage(
+		tstorage.WithDataPath("./data"),
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
+	)
+	_ = storage.InsertRows([]tstorage.Row{
+		{
+			Metric: "mem_alloc_bytes",
+			Labels: []tstorage.Label{
+				{Name: "host", Value: "host-1"},
+			},
+			DataPoint: tstorage.DataPoint{Timestamp: 1600000000, Value: 0.1}},
+	})
+	points, _ := storage.SelectDataPoints(
+		"mem_alloc_bytes",
+		[]tstorage.Label{{Name: "host", Value: "host-1"}},
+		1600000000, 1600000001,
+	)
+	for _, p := range points {
+		fmt.Printf("timestamp: %v, value: %v\n", p.Timestamp, p.Value)
+		// => timestamp: 1600000000, value: 0.1
+	}
+}
+```
+
 
 For more examples see [the documentation](https://pkg.go.dev/github.com/nakabonne/tstorage#pkg-examples).
 
