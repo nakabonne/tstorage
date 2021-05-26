@@ -1,4 +1,6 @@
 # tstorage
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/mod/github.com/nakabonne/tstorage?tab=packages)
+
 TStorage is a fast local on-disk storage package for time-series data with a straightforward API.
 It is massively optimized ingestion as it allows the database to slice data extremely efficiently in small chunks and process it all in parallel.
 
