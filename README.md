@@ -43,6 +43,8 @@ Based on these characteristics, `tstorage`'s data model differs from the B-trees
 This package adopts a linear data model structure which partitions data points by time.
 Each partition acts as a fully independent database containing all data points for its time range.
 
+![Screenshot](architecture.jpg)
+
 Key benefits:
 - When querying a time range, we can easily ignore all data outside of the partition range.
 - When completing a partition, we can persist the data from our in-memory database by sequentially writing just a handful of larger files. We avoid any write-amplification and serve SSDs and HDDs equally well.
