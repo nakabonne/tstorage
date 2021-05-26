@@ -17,7 +17,8 @@ func BenchmarkStorage_InsertRows(b *testing.B) {
 	}
 }
 
-func BenchmarkStorage_SelectDataPointsFromThousandPoints(b *testing.B) {
+// Select data points among a thousand data in memory
+func BenchmarkStorage_SelectDataPointsAmongThousandPoints(b *testing.B) {
 	storage, err := NewStorage()
 	require.NoError(b, err)
 	for i := 1; i < 1000; i++ {
@@ -31,7 +32,8 @@ func BenchmarkStorage_SelectDataPointsFromThousandPoints(b *testing.B) {
 	}
 }
 
-func BenchmarkStorage_SelectDataPointsFromMillionPoints(b *testing.B) {
+// Select data points among a million data in memory
+func BenchmarkStorage_SelectDataPointsAmongMillionPoints(b *testing.B) {
 	storage, err := NewStorage()
 	require.NoError(b, err)
 	for i := 1; i < 1000000; i++ {
