@@ -63,7 +63,7 @@ func Test_memoryPartition_InsertRows(t *testing.T) {
 	}
 }
 
-func Test_memoryPartition_SelectRows(t *testing.T) {
+func Test_memoryPartition_SelectDataPoints(t *testing.T) {
 	tests := []struct {
 		name            string
 		metric          string

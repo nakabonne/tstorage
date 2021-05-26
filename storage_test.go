@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_storage_SelectRows(t *testing.T) {
+func Test_storage_SelectDataPoints(t *testing.T) {
 	tests := []struct {
 		name    string
 		storage storage
