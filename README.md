@@ -22,10 +22,10 @@ func main() {
 	_ = storage.InsertRows([]tstorage.Row{
 		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000000, Value: 0.1}},
 	})
-	iterator, _, _ := storage.SelectRows("metric1", nil, 1600000000, 1600000001)
-	for iterator.Next() {
-		fmt.Printf("timestamp: %v, value: %v\n", iterator.DataPoint().Timestamp, iterator.DataPoint().Value)
-		// => timestamp: 1600000, value: 0.1
+	points, _ := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000001)
+	for _, p := range points {
+		fmt.Printf("timestamp: %v, value: %v\n", p.Timestamp, p.Value)
+		// => timestamp: 1600000000, value: 0.1
 	}
 }
 ```
@@ -51,10 +51,11 @@ goos: darwin
 goarch: amd64
 pkg: github.com/nakabonne/tstorage
 cpu: Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz
-BenchmarkStorage_InsertRows-8                	12284769	       358.3 ns/op	     176 B/op	       3 allocs/op
-BenchmarkStorage_InsertRows_out_of_order-8   	20091308	       233.9 ns/op	     192 B/op	       3 allocs/op
+BenchmarkStorage_InsertRows-8                           	13673982	       323.7 ns/op	     176 B/op	       2 allocs/op
+BenchmarkStorage_SelectDataPointsFromThousandPoints-8   	15553446	       295.3 ns/op	      56 B/op	       2 allocs/op
+BenchmarkStorage_SelectDataPointsFromMillionPoints-8    	15637478	       294.8 ns/op	      56 B/op	       1 allocs/op
 PASS
-ok  	github.com/nakabonne/tstorage	10.307s
+ok  	github.com/nakabonne/tstorage	16.478s
 ```
 
 ## Used by
