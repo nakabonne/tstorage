@@ -6,6 +6,7 @@
 It massively optimises ingestion as it allows the database to slice data extremely efficiently in small chunks and process it all in parallel.
 
 ## Usage
+By default, `tstorage.Storage` works as an in-memory database.
 The below example illustrates how to insert a row into the process memory and immediately select it.
 
 ```go
@@ -33,8 +34,10 @@ func main() {
 ```
 
 ### Examples
-In tstorage, the combination of metric name and labels preserves uniqueness.
-Here is an example of insertion and selection a metric for memory allocation on `host-1`.
+To make time-series data persistent on disk, specify the path to directory that stores time-series data through `WithDataPath` option.
+Also, in tstorage, the combination of metric name and labels preserves uniqueness.
+
+Here is an example of insertion a labeled metric to disk (exactly it doesn't write to disk immediately).
 
 ```go
 package main
@@ -69,6 +72,8 @@ func main() {
 	}
 }
 ```
+
+<!-- TODO: Add an example for partition duration with description about partition-->
 
 
 For more examples see [the documentation](https://pkg.go.dev/github.com/nakabonne/tstorage#pkg-examples).
