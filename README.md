@@ -34,12 +34,12 @@ func main() {
 For more examples see [the documentation](https://pkg.go.dev/github.com/nakabonne/tstorage#pkg-examples).
 
 ## Internal
-Time-series data has specific characteristics in its workload.
+Time-series database has specific characteristics in its workload.
 In terms of write operations, a time-series database must be designed to handle exceptionally large volumes, specifically, performant ingestion is a cornerstone feature.
 In terms of read operations, most recent first. In most cases, users want to query in real-time. Databases should be able to pull the latest record very fast, easily.
 Entirely, time-series data is mostly an append-only workload with delete operations performed in batches on less recent data.
 
-Based on this characteristics, `tstorage`'s data model differs from the B-trees or LSM trees based storage engines.
+Based on these characteristics, `tstorage`'s data model differs from the B-trees or LSM trees based storage engines.
 This package adopts a linear data model structure which partitions data points by time.
 Each partition acts as a fully independent database containing all data points for its time range.
 
