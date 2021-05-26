@@ -57,7 +57,7 @@ func Test_memoryPartition_InsertRows(t *testing.T) {
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.wantOutOfOrderRows, gotOutOfOrder)
 
-			got := tt.memoryPartition.selectRows("metric1", nil, 0, 4)
+			got := tt.memoryPartition.selectDataPoints("metric1", nil, 0, 4)
 			assert.Equal(t, tt.wantDataPoints, got)
 		})
 	}
@@ -131,7 +131,7 @@ func Test_memoryPartition_SelectRows(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.memoryPartition.selectRows(tt.metric, tt.labels, tt.start, tt.end)
+			got := tt.memoryPartition.selectDataPoints(tt.metric, tt.labels, tt.start, tt.end)
 			assert.Equal(t, tt.want, got)
 		})
 	}

@@ -59,8 +59,6 @@ type Reader interface {
 	// SelectDataPoints gives back a list of data points  within the given start-end range.
 	// Keep in mind that start is inclusive, end is exclusive, and both must be Unix timestamp.
 	SelectDataPoints(metric string, labels []Label, start, end int64) (points []*DataPoint, err error)
-	// SelectValues gives back a list of actual values.
-	SelectValues(metric string, labels []Label, start, end int64) (values []float64, err error)
 }
 
 // Row includs a data point along with properties to identify a kind of metrics.
@@ -307,7 +305,7 @@ func (s *storage) SelectDataPoints(metric string, labels []Label, start, end int
 		if part.minTimestamp() > end {
 			continue
 		}
-		ps := part.selectRows(metric, labels, start, end)
+		ps := part.selectDataPoints(metric, labels, start, end)
 		// in order to keep the order in ascending.
 		points = append(ps, points...)
 	}
@@ -315,11 +313,6 @@ func (s *storage) SelectDataPoints(metric string, labels []Label, start, end int
 		return nil, ErrNoDataPoints
 	}
 	return points, nil
-}
-
-// FIXME: Implement SelectValues
-func (s *storage) SelectValues(metric string, labels []Label, start, end int64) ([]float64, error) {
-	return nil, nil
 }
 
 func (s *storage) Close() {

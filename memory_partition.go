@@ -117,8 +117,7 @@ func toUnix(t time.Time, precision TimestampPrecision) int64 {
 	}
 }
 
-// selectRows gives back the certain data points within the given range.
-func (m *memoryPartition) selectRows(metric string, labels []Label, start, end int64) []*DataPoint {
+func (m *memoryPartition) selectDataPoints(metric string, labels []Label, start, end int64) []*DataPoint {
 	name := marshalMetricName(metric, labels)
 	mt := m.getMetric(name)
 	return mt.selectPoints(start, end)

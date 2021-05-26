@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func BenchmarkStorage_SelectRows(b *testing.B) {
+func BenchmarkStorage_SelectDataPoints(b *testing.B) {
 	storage, err := NewStorage()
 	require.NoError(b, err)
 	for i := 1; i < 100000; i++ {

@@ -33,8 +33,8 @@ func ExampleStorage_InsertRows_simple() {
 	// timestamp: 1600000000, value: 0.1
 }
 
-// ExampleStorage_InsertRows_SelectRows_concurrent simulates writing and reading in concurrent.
-func ExampleStorage_InsertRows_SelectRows_concurrent() {
+// ExampleStorage_InsertRows_SelectDataPoints_concurrent simulates writing and reading in concurrent.
+func ExampleStorage_InsertRows_SelectDataPoints_concurrent() {
 	storage, err := tstorage.NewStorage(
 		tstorage.WithPartitionDuration(5*time.Hour),
 		tstorage.WithTimestampPrecision(tstorage.Seconds),
