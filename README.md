@@ -1,7 +1,7 @@
 # tstorage
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/mod/github.com/nakabonne/tstorage?tab=packages)
 
-TStorage is a fast local on-disk storage package for time-series data with a straightforward API.
+`tstorage` is a fast local on-disk storage package for time-series data with a straightforward API.
 It is massively optimized ingestion as it allows the database to slice data extremely efficiently in small chunks and process it all in parallel.
 
 ## Usage
@@ -30,17 +30,24 @@ func main() {
 }
 ```
 
-For more examples see [here](https://pkg.go.dev/github.com/nakabonne/tstorage#pkg-examples).
-
-## Who's it for?
-For those who want
-- a fast time-series storage engine
+For more examples see [the documentation](https://pkg.go.dev/github.com/nakabonne/tstorage#pkg-examples).
 
 ## Internal
-TStorage's data model differs from the B-trees or LSM trees based storage engines.
+Time-series data has specific characteristics in its workload.
+In terms of write operations, a time-series database must be designed to handle exceptionally large volumes, specifically, performant ingestion is a cornerstone feature.
+In terms of read operations, most recent first. In most cases, users want to query in real-time. Databases should be able to pull the latest record very fast, easily.
+Entirely, time-series data is mostly an append-only workload with delete operations performed in batches on less recent data.
+
+Based on this characteristics, `tstorage`'s data model differs from the B-trees or LSM trees based storage engines.
+This package adopts linear data model structure which partitions data points by time.
+Each partition acts as a fully independent database containing all data points for its time range.
+
+Benefits:
+- When querying a time range, we can easily ignore all data outside of the partition range.
+- When completing a partition, we can persist the data from our in-memory database by sequentially writing just a handful of larger files. We avoid any write-amplification and serve SSDs and HDDs equally well.
 
 ## Benchmarks
-Benchmark tests were made using an cpu: Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz with 16GB of RAM on macOS 10.15.7
+Benchmark tests were made using Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz with 16GB of RAM on macOS 10.15.7
 
 ```
 $ go version
