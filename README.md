@@ -53,19 +53,20 @@ func main() {
 		tstorage.WithDataPath("./data"),
 		tstorage.WithTimestampPrecision(tstorage.Seconds),
 	)
+
+	metric := "mem_alloc_bytes"
+	labels := []tstorage.Label{
+		{Name: "host", Value: "host-1"},
+	}
+
 	_ = storage.InsertRows([]tstorage.Row{
 		{
-			Metric: "mem_alloc_bytes",
-			Labels: []tstorage.Label{
-				{Name: "host", Value: "host-1"},
-			},
-			DataPoint: tstorage.DataPoint{Timestamp: 1600000000, Value: 0.1}},
+			Metric:    metric,
+			Labels:    labels,
+			DataPoint: tstorage.DataPoint{Timestamp: 1600000000, Value: 0.1},
+		},
 	})
-	points, _ := storage.SelectDataPoints(
-		"mem_alloc_bytes",
-		[]tstorage.Label{{Name: "host", Value: "host-1"}},
-		1600000000, 1600000001,
-	)
+	points, _ := storage.SelectDataPoints(metric, labels, 1600000000, 1600000001)
 	for _, p := range points {
 		fmt.Printf("timestamp: %v, value: %v\n", p.Timestamp, p.Value)
 		// => timestamp: 1600000000, value: 0.1
