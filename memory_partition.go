@@ -8,7 +8,8 @@ import (
 	"time"
 )
 
-// memoryPartition implements a partition to store on the process memory.
+// A memoryPartition implements a partition to store data points on heap.
+// It offers a goroutine safe capabilities.
 type memoryPartition struct {
 	// A hash map from metric name to memoryMetric.
 	metrics sync.Map

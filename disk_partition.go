@@ -15,10 +15,9 @@ const (
 	metaFileName = "meta.json"
 )
 
-// A disk partition acts as a partition that uses local disk as a storage.
+// A disk partition implements a partition that uses local disk as a storage.
 // It mainly has two files, data file and meta file.
-// Once initializing a disk partition, it is permanently immutable; no need
-// to lock at all.
+// The data file is memory-mapped and read only; no need to lock at all.
 type diskPartition struct {
 	dirPath string
 	meta    meta
@@ -38,6 +37,7 @@ type meta struct {
 	Metrics       map[string]diskMetric `json:"metrics"`
 }
 
+// diskMetric holds meta data to access actual data from the memory-mapped file.
 type diskMetric struct {
 	Name          string `json:"name"`
 	Offset        int64  `json:"offset"`
