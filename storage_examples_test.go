@@ -18,7 +18,11 @@ func ExampleStorage_InsertRows_simple() {
 	if err != nil {
 		panic(err)
 	}
-	defer storage.Close()
+	defer func() {
+		if err := storage.Close(); err != nil {
+			panic(err)
+		}
+	}()
 	err = storage.InsertRows([]tstorage.Row{
 		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000000, Value: 0.1}},
 	})
@@ -45,7 +49,11 @@ func ExampleStorage_InsertRows_SelectDataPoints_concurrent() {
 	if err != nil {
 		panic(err)
 	}
-	defer storage.Close()
+	defer func() {
+		if err := storage.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	var wg sync.WaitGroup
 
@@ -107,7 +115,11 @@ func ExampleStorage_InsertRows_SelectDataPoints_on_disk() {
 	if err != nil {
 		panic(err)
 	}
-	defer storage.Close()
+	defer func() {
+		if err := storage.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	for timestamp := int64(1600000000); timestamp < 1600000050; timestamp++ {
 		err := storage.InsertRows([]tstorage.Row{

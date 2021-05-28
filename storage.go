@@ -50,8 +50,8 @@ type Storage interface {
 	// InsertRows ingests the given rows to the time-series storage.
 	// If a timestamp isn't specified, it uses the machine's local timestamp in UTC.
 	InsertRows(rows []Row) error
-	// Close flushes all data points within the memory partitions into the backend.
-	Close()
+	// Close gracefully shutdowns by flushing any unwritten data to the underlying disk partition.
+	Close() error
 }
 
 // Reader provides reading access to time series data.
@@ -319,10 +319,17 @@ func (s *storage) SelectDataPoints(metric string, labels []Label, start, end int
 	return points, nil
 }
 
-func (s *storage) Close() {
+func (s *storage) Close() error {
 	s.wg.Wait()
 	// TODO: Prevent from new goroutines calling InsertRows(), for graceful shutdown.
-	// FIXME: Flush data points within the all memory partition into the backend.
+	for i := 0; i < defaultWritablePartitionsNum; i++ {
+		p := newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision)
+		s.partitionList.insert(p)
+	}
+	if err := s.flushPartitions(); err != nil {
+		return fmt.Errorf("failed to close storage: %w", err)
+	}
+	return nil
 }
 
 // flushPartitions persists all in-memory partitions ready to persisted.
