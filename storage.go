@@ -321,7 +321,10 @@ func (s *storage) SelectDataPoints(metric string, labels []Label, start, end int
 
 func (s *storage) Close() error {
 	s.wg.Wait()
+
 	// TODO: Prevent from new goroutines calling InsertRows(), for graceful shutdown.
+
+	// Make all writable partitions read-only by inserting as same number of those.
 	for i := 0; i < defaultWritablePartitionsNum; i++ {
 		p := newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision)
 		s.partitionList.insert(p)

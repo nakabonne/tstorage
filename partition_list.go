@@ -136,7 +136,7 @@ func (p *partitionListImpl) swap(old, new partition) error {
 
 		newNode := &partitionNode{
 			val:  new,
-			next: current.next,
+			next: current.getNext(),
 		}
 		iterator.next()
 		next = iterator.currentNode()
