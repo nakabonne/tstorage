@@ -163,12 +163,9 @@ func NewStorage(opts ...Option) (Storage, error) {
 	if s.logger == nil {
 		s.logger = &nopLogger{}
 	}
-	if s.newHeadPartition == nil {
-		s.newHeadPartition = newMemoryPartition
-	}
 
 	if s.inMemoryMode() {
-		s.partitionList.insert(s.newHeadPartition(nil, s.partitionDuration, s.timestampPrecision))
+		s.partitionList.insert(newMemoryPartition(nil, s.partitionDuration, s.timestampPrecision))
 		return s, nil
 	}
 
@@ -181,7 +178,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 		return nil, fmt.Errorf("failed to open data directory: %w", err)
 	}
 	if len(files) == 0 {
-		s.partitionList.insert(s.newHeadPartition(s.wal, s.partitionDuration, s.timestampPrecision))
+		s.partitionList.insert(newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision))
 		return s, nil
 	}
 
@@ -207,7 +204,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 	for _, p := range partitions {
 		s.partitionList.insert(p)
 	}
-	s.partitionList.insert(s.newHeadPartition(s.wal, s.partitionDuration, s.timestampPrecision))
+	s.partitionList.insert(newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision))
 
 	return s, nil
 }
@@ -220,7 +217,6 @@ type storage struct {
 	timestampPrecision  TimestampPrecision
 	dataPath            string
 	writeTimeout        time.Duration
-	newHeadPartition    func(wal, time.Duration, TimestampPrecision) partition
 	compressorFactory   func(w io.WriteSeeker) compressor
 	decompressorFactory func(r io.Reader) (decompressor, error)
 
@@ -277,7 +273,7 @@ func (s *storage) getPartition() partition {
 
 	// All partitions seems to be inactive so add a new partition to the list.
 
-	p := s.newHeadPartition(s.wal, s.partitionDuration, s.timestampPrecision)
+	p := newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision)
 	s.partitionList.insert(p)
 	go func() {
 		if err := s.flushPartitions(); err != nil {
