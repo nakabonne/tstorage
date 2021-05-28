@@ -159,7 +159,6 @@ func (p *partitionListImpl) swap(old, new partition) error {
 }
 
 func samePartitions(x, y partition) bool {
-	// TODO: Use ULID for identifier of partition
 	return x.minTimestamp() == y.minTimestamp()
 }
 
