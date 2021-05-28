@@ -10,7 +10,7 @@ import (
 
 // memoryPartition implements a partition to store on the process memory.
 type memoryPartition struct {
-	// A hash map from metric-name to metric.
+	// A hash map from metric name to memoryMetric.
 	metrics sync.Map
 	// The number of data points
 	numPoints int64
@@ -117,55 +117,25 @@ func toUnix(t time.Time, precision TimestampPrecision) int64 {
 	}
 }
 
-func (m *memoryPartition) selectDataPoints(metric string, labels []Label, start, end int64) []*DataPoint {
+func (m *memoryPartition) selectDataPoints(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
 	name := marshalMetricName(metric, labels)
 	mt := m.getMetric(name)
-	return mt.selectPoints(start, end)
+	return mt.selectPoints(start, end), nil
 }
 
 // getMetric gives back the reference to the metrics list whose name is the given one.
 // If none, it creates a new one.
-func (m *memoryPartition) getMetric(name string) *metric {
+func (m *memoryPartition) getMetric(name string) *memoryMetric {
 	value, ok := m.metrics.Load(name)
 	if !ok {
-		value = &metric{
+		value = &memoryMetric{
 			name:             name,
 			points:           make([]*DataPoint, 0, 1000),
 			outOfOrderPoints: make([]*DataPoint, 0),
 		}
 		m.metrics.Store(name, value)
 	}
-	return value.(*metric)
-}
-
-func (m *memoryPartition) selectAll() []Row {
-	rows := make([]Row, 0, m.size())
-	/*
-		m.metrics.Range(func(key, value interface{}) bool {
-			mt, ok := value.(*metric)
-			if !ok {
-				return false
-			}
-			k, ok := key.(string)
-			if !ok {
-				return false
-			}
-			labels := unmarshalMetricName(k)
-			iterator := mt.points.newIterator()
-			for iterator.Next() {
-				point := iterator.DataPoint()
-				rows = append(rows, Row{
-					Labels: labels,
-					DataPoint: DataPoint{
-						Timestamp: point.Timestamp,
-						Value:     point.Value,
-					},
-				})
-			}
-			return true
-		})
-	*/
-	return rows
+	return value.(*memoryMetric)
 }
 
 func (m *memoryPartition) minTimestamp() int64 {
@@ -184,20 +154,19 @@ func (m *memoryPartition) active() bool {
 	return m.maxTimestamp()-m.minTimestamp() < m.partitionDuration
 }
 
-// metric has a list of data points that belong to the metric
-type metric struct {
+// memoryMetric has a list of ordered data points that belong to the memoryMetric
+type memoryMetric struct {
 	name         string
 	size         int64
 	minTimestamp int64
 	maxTimestamp int64
 	// points must kept in order
-	points []*DataPoint
-	// TODO: Merge out-of-order points when flushing
+	points           []*DataPoint
 	outOfOrderPoints []*DataPoint
 	mu               sync.RWMutex
 }
 
-func (m *metric) insertPoint(point *DataPoint) {
+func (m *memoryMetric) insertPoint(point *DataPoint) {
 	size := atomic.LoadInt64(&m.size)
 	// TODO: Consider to stop using mutex every time.
 	//   Instead, fix the capacity of points slice, kind of like:
@@ -230,18 +199,18 @@ func (m *metric) insertPoint(point *DataPoint) {
 }
 
 // selectPoints returns a new slice by re-slicing with [startIdx:endIdx].
-func (m *metric) selectPoints(start, end int64) []*DataPoint {
+func (m *memoryMetric) selectPoints(start, end int64) []*DataPoint {
 	size := atomic.LoadInt64(&m.size)
 	minTimestamp := atomic.LoadInt64(&m.minTimestamp)
 	maxTimestamp := atomic.LoadInt64(&m.maxTimestamp)
-
 	var startIdx, endIdx int
+
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	if start <= minTimestamp {
 		startIdx = 0
 	} else {
-		// Use binary search because m.points are in-order.
+		// Use binary search because points are in-order.
 		startIdx = sort.Search(int(size), func(i int) bool {
 			return m.points[i].Timestamp >= start
 		})
@@ -250,7 +219,7 @@ func (m *metric) selectPoints(start, end int64) []*DataPoint {
 	if end >= maxTimestamp {
 		endIdx = int(size)
 	} else {
-		// Use binary search because m.points are in-order.
+		// Use binary search because points are in-order.
 		endIdx = sort.Search(int(size), func(i int) bool {
 			return m.points[i].Timestamp < end
 		}) + 1

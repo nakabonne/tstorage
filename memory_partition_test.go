@@ -57,7 +57,7 @@ func Test_memoryPartition_InsertRows(t *testing.T) {
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.wantOutOfOrderRows, gotOutOfOrder)
 
-			got := tt.memoryPartition.selectDataPoints("metric1", nil, 0, 4)
+			got, _ := tt.memoryPartition.selectDataPoints("metric1", nil, 0, 4)
 			assert.Equal(t, tt.wantDataPoints, got)
 		})
 	}
@@ -131,116 +131,11 @@ func Test_memoryPartition_SelectDataPoints(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.memoryPartition.selectDataPoints(tt.metric, tt.labels, tt.start, tt.end)
+			got, _ := tt.memoryPartition.selectDataPoints(tt.metric, tt.labels, tt.start, tt.end)
 			assert.Equal(t, tt.want, got)
 		})
 	}
 }
-
-/*
-func TestSelectAll(t *testing.T) {
-	tests := []struct {
-		name            string
-		memoryPartition memoryPartition
-		want            []Row
-	}{
-		{
-			name: "single data point for single metric",
-			memoryPartition: func() memoryPartition {
-				m := memoryPartition{}
-				m.metrics.Store("metric1", &metric{
-					name: "metric1",
-					points: []DataPoint{
-						{
-							Timestamp: 1,
-							value:     0.1,
-						},
-					},
-				})
-				return m
-			}(),
-			want: []Row{
-				{
-					//MetricName: "metric1",
-					DataPoint: DataPoint{
-						Timestamp: 1,
-						value:     0.1,
-					},
-				},
-			},
-		},
-		{
-			name: "multiple data points for multiple metrics",
-			memoryPartition: func() memoryPartition {
-				m := memoryPartition{}
-				m.metrics.Store("metric1", &metric{
-					name: "metric1",
-					points: []DataPoint{
-						{
-							Timestamp: 1,
-							value:     0.1,
-						},
-						{
-							Timestamp: 2,
-							value:     0.2,
-						},
-					},
-				})
-				m.metrics.Store("metric2", &metric{
-					name: "metric2",
-					points: []DataPoint{
-						{
-							Timestamp: 1,
-							value:     0.1,
-						},
-						{
-							Timestamp: 2,
-							value:     0.2,
-						},
-					},
-				})
-				return m
-			}(),
-			want: []Row{
-				{
-					//MetricName: "metric1",
-					DataPoint: DataPoint{
-						Timestamp: 1,
-						value:     0.1,
-					},
-				},
-				{
-					//MetricName: "metric1",
-					DataPoint: DataPoint{
-						Timestamp: 2,
-						value:     0.2,
-					},
-				},
-				{
-					//MetricName: "metric2",
-					DataPoint: DataPoint{
-						Timestamp: 1,
-						value:     0.1,
-					},
-				},
-				{
-					//MetricName: "metric2",
-					DataPoint: DataPoint{
-						Timestamp: 2,
-						value:     0.2,
-					},
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := tt.memoryPartition.selectAll()
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-*/
 
 func Test_toUnix(t *testing.T) {
 	tests := []struct {

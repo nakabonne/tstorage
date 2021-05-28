@@ -1,75 +1,55 @@
 package tstorage
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/fs"
+	"io"
 	"os"
 	"path/filepath"
+	"syscall"
 )
 
-const chunksDirName = "chunks"
+const (
+	dataFileName = "data"
+	metaFileName = "meta.json"
+)
 
-// See newDiskPartition for details.
+// A disk partition acts as a partition that uses local disk as a storage.
+// Once initializing a disk partition, it is permanently immutable; no need
+// to lock at all.
 type diskPartition struct {
 	dirPath string
-
 	// The number of data points
 	numPoints int
 	minT      int64
 	maxT      int64
+	f         *os.File
+	// memory-mapped file backed by f
+	mappedFile []byte
+	// A hash map from metric name to diskMetric.
+	metrics map[string]diskMetric
+
+	decompressorFactory func(r io.Reader) (decompressor, error)
 }
 
-// newDiskPartition generates a disk partition from the given data.
-// If any data exist under the given dirPath, it overrides data with the given initial data.
-// It's typically used for making a brand new partition.
-//
-// A disk partition acts as a partition that uses local disk as a storage.
-// Once initializing a disk partition, it is permanently immutable.
-func newDiskPartition(dirPath string, rows []Row, minTimestamp, maxTimestamp int64) (partition, error) {
-	if dirPath == "" {
-		return nil, fmt.Errorf("dir path is required")
-	}
-	if len(rows) == 0 {
-		return nil, fmt.Errorf("rows are required")
-	}
-
-	chunksDir := filepath.Join(dirPath, chunksDirName)
-	if err := os.MkdirAll(chunksDir, fs.ModePerm); err != nil {
-		return nil, fmt.Errorf("failed to make directory %q: %w", dirPath, err)
-	}
-
-	// TODO: Divide chunks for each constant bytes
-	dataPath := filepath.Join(chunksDir, "1")
-	if err := os.WriteFile(dataPath, rowsToBytes(rows), fs.ModePerm); err != nil {
-		return nil, fmt.Errorf("failed to write data points to %s: %w", dataPath, err)
-	}
-	numDatapoints := len(rows)
-	m := &meta{
-		MinTimestamp:  minTimestamp,
-		MaxTimestamp:  maxTimestamp,
-		NumDatapoints: numDatapoints,
-	}
-	b, err := json.Marshal(m)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode metadata: %w", err)
-	}
-	metaPath := filepath.Join(dirPath, metaFileName)
-	if err := os.WriteFile(metaPath, b, fs.ModePerm); err != nil {
-		return nil, fmt.Errorf("failed to write metadata to %s: %w", metaPath, err)
-	}
-
-	return &diskPartition{
-		dirPath:   dirPath,
-		numPoints: numDatapoints,
-		minT:      minTimestamp,
-		maxT:      maxTimestamp,
-	}, nil
+type diskMetric struct {
+	name         string
+	offset       int64
+	numPoints    int64
+	minTimestamp int64
+	maxTimestamp int64
 }
 
-// openDiskPartition generates a disk partition from the existent files.
-// If the given dir doesn't exist, use newDiskPartition instead.
-func openDiskPartition(dirPath string) (partition, error) {
+// meta is a mapper for a meta file, which is put for each partition.
+type meta struct {
+	MinTimestamp  int64 `json:"minTimestamp"`
+	MaxTimestamp  int64 `json:"maxTimestamp"`
+	NumDatapoints int   `json:"numDatapoints"`
+}
+
+// openDiskPartition first maps the data file into memory with memory-mapping.
+func openDiskPartition(dirPath string, decompressorFactory func(r io.Reader) (decompressor, error)) (partition, error) {
 	if dirPath == "" {
 		return nil, fmt.Errorf("dir path is required")
 	}
@@ -78,39 +58,77 @@ func openDiskPartition(dirPath string) (partition, error) {
 		return nil, fmt.Errorf("failed to read metadata: %w", err)
 	}
 	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch file info: %w", err)
+	}
+	mapped, err := syscall.Mmap(
+		int(f.Fd()),
+		0,
+		int(info.Size()),
+		syscall.PROT_READ,
+		syscall.MAP_SHARED,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to perform mmap: %w", err)
+	}
 
+	// FIXME: Read metrics' offset
+
+	// Read metadata
 	m := &meta{}
 	decoder := json.NewDecoder(f)
 	if err := decoder.Decode(m); err != nil {
 		return nil, fmt.Errorf("failed to decode metadata: %w", err)
 	}
 	return &diskPartition{
-		dirPath:   dirPath,
-		minT:      m.MinTimestamp,
-		maxT:      m.MaxTimestamp,
-		numPoints: m.NumDatapoints,
+		dirPath:             dirPath,
+		minT:                m.MinTimestamp,
+		maxT:                m.MaxTimestamp,
+		numPoints:           m.NumDatapoints,
+		f:                   f,
+		mappedFile:          mapped,
+		decompressorFactory: decompressorFactory,
 	}, nil
-}
-
-func rowsToBytes(rows []Row) []byte {
-	// FIXME: Compact rows
-	return []byte("not implemented yet")
 }
 
 func (d *diskPartition) insertRows(_ []Row) ([]Row, error) {
 	return nil, fmt.Errorf("can't insert rows into disk partition")
 }
 
-func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, end int64) []*DataPoint {
-	// FIXME: Implement selectDataPoints from disk partition
-	fmt.Println("selectDataPoints for disk partition isn't implemented yet")
-	return nil
-}
+func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
+	name := marshalMetricName(metric, labels)
+	mt, ok := d.metrics[name]
+	if !ok {
+		return nil, ErrNoDataPoints
+	}
+	r := bytes.NewReader(d.mappedFile)
+	if _, err := r.Seek(mt.offset, 0); err != nil {
+		return nil, err
+	}
 
-func (d *diskPartition) selectAll() []Row {
-	// TODO: Implement selectAll for disk partition
-	fmt.Println("select all for disk partition isn't implemented yet")
-	return []Row{}
+	decompressor, err := d.decompressorFactory(r)
+	if err != nil {
+		return nil, err
+	}
+	points := make([]*DataPoint, 0, mt.numPoints)
+	for i := 0; i < d.numPoints; i++ {
+		point := &DataPoint{}
+		if err := decompressor.read(point); err != nil {
+			return nil, err
+		}
+		if point.Timestamp < start {
+			continue
+		}
+		if point.Timestamp >= end {
+			break
+		}
+		points = append(points, point)
+	}
+	if err := decompressor.close(); err != nil {
+		return nil, err
+	}
+	return points, nil
 }
 
 func (d *diskPartition) minTimestamp() int64 {
@@ -128,13 +146,4 @@ func (d *diskPartition) size() int {
 // Disk partition is immutable.
 func (d *diskPartition) active() bool {
 	return false
-}
-
-const metaFileName = "meta.json"
-
-// meta is a mapper for a meta file, which is put for each partition.
-type meta struct {
-	MinTimestamp  int64 `json:"minTimestamp"`
-	MaxTimestamp  int64 `json:"maxTimestamp"`
-	NumDatapoints int   `json:"numDatapoints"`
 }

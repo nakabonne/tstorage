@@ -1,8 +1,10 @@
 package tstorage
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -61,7 +63,7 @@ type Reader interface {
 	SelectDataPoints(metric string, labels []Label, start, end int64) (points []*DataPoint, err error)
 }
 
-// Row includs a data point along with properties to identify a kind of metrics.
+// Row includes a data point along with properties to identify a kind of metrics.
 type Row struct {
 	// The unique name of metric.
 	// This field must be set.
@@ -144,6 +146,9 @@ func NewStorage(opts ...Option) (Storage, error) {
 	s := &storage{
 		partitionList:  newPartitionList(),
 		workersLimitCh: make(chan struct{}, defaultWorkersLimit),
+		// TODO: Make gzip compressor/decompressor changeable
+		compressorFactory:   newGzipCompressor,
+		decompressorFactory: newGzipDecompressor,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -192,7 +197,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 			continue
 		}
 		path := filepath.Join(s.dataPath, f.Name())
-		part, err := openDiskPartition(path)
+		part, err := openDiskPartition(path, s.decompressorFactory)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open disk partition for %s: %w", path, err)
 		}
@@ -212,12 +217,14 @@ func NewStorage(opts ...Option) (Storage, error) {
 type storage struct {
 	partitionList partitionList
 
-	wal                wal
-	partitionDuration  time.Duration
-	timestampPrecision TimestampPrecision
-	dataPath           string
-	writeTimeout       time.Duration
-	newHeadPartition   func(wal, time.Duration, TimestampPrecision) partition
+	wal                 wal
+	partitionDuration   time.Duration
+	timestampPrecision  TimestampPrecision
+	dataPath            string
+	writeTimeout        time.Duration
+	newHeadPartition    func(wal, time.Duration, TimestampPrecision) partition
+	compressorFactory   func(w io.WriteSeeker) compressor
+	decompressorFactory func(r io.Reader) (decompressor, error)
 
 	logger         Logger
 	workersLimitCh chan struct{}
@@ -305,7 +312,10 @@ func (s *storage) SelectDataPoints(metric string, labels []Label, start, end int
 		if part.minTimestamp() > end {
 			continue
 		}
-		ps := part.selectDataPoints(metric, labels, start, end)
+		ps, err := part.selectDataPoints(metric, labels, start, end)
+		if err != nil {
+			return nil, fmt.Errorf("failed to select data points: %w", err)
+		}
 		// in order to keep the order in ascending.
 		points = append(ps, points...)
 	}
@@ -322,6 +332,7 @@ func (s *storage) Close() {
 }
 
 // flushPartitions persists all in-memory partitions ready to persisted.
+// For the in-memory mode, just removes it from the partition list.
 func (s *storage) flushPartitions() error {
 	// Keep the first two partitions as is even if they are inactive,
 	// to accept out-of-order data points.
@@ -336,7 +347,8 @@ func (s *storage) flushPartitions() error {
 		if part == nil {
 			return fmt.Errorf("unexpected empty partition found")
 		}
-		if _, ok := part.(*memoryPartition); !ok {
+		memPart, ok := part.(*memoryPartition)
+		if !ok {
 			continue
 		}
 
@@ -350,17 +362,72 @@ func (s *storage) flushPartitions() error {
 		// Start swapping in-memory partition for disk one.
 		// The disk partition will place at where in-memory one existed.
 
-		rows := make([]Row, 0, part.size())
-		rows = append(rows, part.selectAll()...)
 		// TODO: Use https://github.com/oklog/ulid instead of uuid
 		dir := filepath.Join(s.dataPath, fmt.Sprintf("p-%s", uuid.New()))
-		newPart, err := newDiskPartition(dir, rows, part.minTimestamp(), part.maxTimestamp())
+		if err := flush(dir, memPart, s.compressorFactory); err != nil {
+			return fmt.Errorf("failed to compact memory partition into %s: %w", dir, err)
+		}
+		newPart, err := openDiskPartition(dir, s.decompressorFactory)
 		if err != nil {
 			return fmt.Errorf("failed to generate disk partition for %s: %w", dir, err)
 		}
 		if err := s.partitionList.swap(part, newPart); err != nil {
 			return fmt.Errorf("failed to swap partitions: %w", err)
 		}
+	}
+	return nil
+}
+
+// flush compacts the data points in the given partition and flushes them to the given directory.
+func flush(dirPath string, m *memoryPartition, compressorFactory func(seeker io.WriteSeeker) compressor) error {
+	if dirPath == "" {
+		return fmt.Errorf("dir path is required")
+	}
+
+	if err := os.MkdirAll(dirPath, fs.ModePerm); err != nil {
+		return fmt.Errorf("failed to make directory %q: %w", dirPath, err)
+	}
+
+	f, err := os.Create(filepath.Join(dirPath, dataFileName))
+	if err != nil {
+		return fmt.Errorf("failed to create file %q: %w", dirPath, err)
+	}
+	defer f.Close()
+	compactor := compressorFactory(f)
+
+	m.metrics.Range(func(key, value interface{}) bool {
+		mt, ok := value.(*memoryMetric)
+		if !ok {
+			return false
+		}
+		// TODO: Merge out-of-order data points
+		points := make([]*DataPoint, 0, len(mt.points)+len(mt.outOfOrderPoints))
+		for _, p := range mt.points {
+			points = append(points, p)
+		}
+		// Compress data points for each metric.
+		if err := compactor.write(points); err != nil {
+			return false
+		}
+		// FIXME: Write offset of metric start
+
+		return true
+	})
+	if err := compactor.close(); err != nil {
+		return err
+	}
+
+	b, err := json.Marshal(&meta{
+		MinTimestamp:  m.minTimestamp(),
+		MaxTimestamp:  m.maxTimestamp(),
+		NumDatapoints: m.size(),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to encode metadata: %w", err)
+	}
+	metaPath := filepath.Join(dirPath, metaFileName)
+	if err := os.WriteFile(metaPath, b, fs.ModePerm); err != nil {
+		return fmt.Errorf("failed to write metadata to %s: %w", metaPath, err)
 	}
 	return nil
 }
