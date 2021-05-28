@@ -42,7 +42,7 @@ func main() {
 To make time-series data persistent on disk, specify the path to directory that stores time-series data through `WithDataPath` option.
 Also, in tstorage, the combination of metric name and labels preserves uniqueness.
 
-Here is an example of insertion a labeled metric to disk (exactly it doesn't write to disk immediately).
+Here is an example of insertion a labeled metric to disk.
 
 ```go
 package main
