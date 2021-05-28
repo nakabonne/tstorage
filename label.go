@@ -71,9 +71,3 @@ func marshalMetricName(metric string, labels []Label) string {
 	}
 	return string(out)
 }
-
-// FIXME: Enable to build labels using metricName
-//   Or, think about another way to flush in-memory data to disk
-func unmarshalMetricName(metricName string) []Label {
-	return nil
-}
