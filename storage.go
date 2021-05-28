@@ -364,7 +364,7 @@ func (s *storage) flushPartitions() error {
 
 		// TODO: Use https://github.com/oklog/ulid instead of uuid
 		dir := filepath.Join(s.dataPath, fmt.Sprintf("p-%s", uuid.New()))
-		if err := flush(dir, memPart, s.compressorFactory); err != nil {
+		if err := s.flush(dir, memPart); err != nil {
 			return fmt.Errorf("failed to compact memory partition into %s: %w", dir, err)
 		}
 		newPart, err := openDiskPartition(dir, s.decompressorFactory)
@@ -379,7 +379,7 @@ func (s *storage) flushPartitions() error {
 }
 
 // flush compacts the data points in the given partition and flushes them to the given directory.
-func flush(dirPath string, m *memoryPartition, compressorFactory func(seeker io.WriteSeeker) compressor) error {
+func (s *storage) flush(dirPath string, m *memoryPartition) error {
 	if dirPath == "" {
 		return fmt.Errorf("dir path is required")
 	}
@@ -393,11 +393,18 @@ func flush(dirPath string, m *memoryPartition, compressorFactory func(seeker io.
 		return fmt.Errorf("failed to create file %q: %w", dirPath, err)
 	}
 	defer f.Close()
-	compactor := compressorFactory(f)
+	compactor := s.compressorFactory(f)
 
+	metrics := map[string]diskMetric{}
 	m.metrics.Range(func(key, value interface{}) bool {
 		mt, ok := value.(*memoryMetric)
 		if !ok {
+			s.logger.Printf("unknown value found\n")
+			return false
+		}
+		offset, err := f.Seek(0, 1)
+		if err != nil {
+			s.logger.Printf("failed to set offset for metric: %v\n", err)
 			return false
 		}
 		// TODO: Merge out-of-order data points
@@ -407,10 +414,16 @@ func flush(dirPath string, m *memoryPartition, compressorFactory func(seeker io.
 		}
 		// Compress data points for each metric.
 		if err := compactor.write(points); err != nil {
+			s.logger.Printf("failed to compact data points: %v\n", err)
 			return false
 		}
-		// FIXME: Write offset of metric start
-
+		metrics[mt.name] = diskMetric{
+			Name:          mt.name,
+			Offset:        offset,
+			MinTimestamp:  mt.minTimestamp,
+			MaxTimestamp:  mt.maxTimestamp,
+			NumDataPoints: mt.size,
+		}
 		return true
 	})
 	if err := compactor.close(); err != nil {
@@ -420,7 +433,8 @@ func flush(dirPath string, m *memoryPartition, compressorFactory func(seeker io.
 	b, err := json.Marshal(&meta{
 		MinTimestamp:  m.minTimestamp(),
 		MaxTimestamp:  m.maxTimestamp(),
-		NumDatapoints: m.size(),
+		NumDataPoints: m.size(),
+		Metrics:       metrics,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to encode metadata: %w", err)

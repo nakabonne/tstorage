@@ -16,36 +16,34 @@ const (
 )
 
 // A disk partition acts as a partition that uses local disk as a storage.
+// It mainly has two files, data file and meta file.
 // Once initializing a disk partition, it is permanently immutable; no need
 // to lock at all.
 type diskPartition struct {
 	dirPath string
-	// The number of data points
-	numPoints int
-	minT      int64
-	maxT      int64
-	f         *os.File
+	meta    meta
+	// file descriptor of data file
+	f *os.File
 	// memory-mapped file backed by f
 	mappedFile []byte
-	// A hash map from metric name to diskMetric.
-	metrics map[string]diskMetric
 
 	decompressorFactory func(r io.Reader) (decompressor, error)
 }
 
-type diskMetric struct {
-	name         string
-	offset       int64
-	numPoints    int64
-	minTimestamp int64
-	maxTimestamp int64
-}
-
 // meta is a mapper for a meta file, which is put for each partition.
 type meta struct {
-	MinTimestamp  int64 `json:"minTimestamp"`
-	MaxTimestamp  int64 `json:"maxTimestamp"`
-	NumDatapoints int   `json:"numDatapoints"`
+	MinTimestamp  int64                 `json:"minTimestamp"`
+	MaxTimestamp  int64                 `json:"maxTimestamp"`
+	NumDataPoints int                   `json:"numDataPoints"`
+	Metrics       map[string]diskMetric `json:"metrics"`
+}
+
+type diskMetric struct {
+	Name          string `json:"name"`
+	Offset        int64  `json:"offset"`
+	MinTimestamp  int64  `json:"minTimestamp"`
+	MaxTimestamp  int64  `json:"maxTimestamp"`
+	NumDataPoints int64  `json:"numDatapoints"`
 }
 
 // openDiskPartition first maps the data file into memory with memory-mapping.
@@ -73,19 +71,15 @@ func openDiskPartition(dirPath string, decompressorFactory func(r io.Reader) (de
 		return nil, fmt.Errorf("failed to perform mmap: %w", err)
 	}
 
-	// FIXME: Read metrics' offset
-
 	// Read metadata
-	m := &meta{}
+	m := meta{}
 	decoder := json.NewDecoder(f)
-	if err := decoder.Decode(m); err != nil {
+	if err := decoder.Decode(&m); err != nil {
 		return nil, fmt.Errorf("failed to decode metadata: %w", err)
 	}
 	return &diskPartition{
 		dirPath:             dirPath,
-		minT:                m.MinTimestamp,
-		maxT:                m.MaxTimestamp,
-		numPoints:           m.NumDatapoints,
+		meta:                m,
 		f:                   f,
 		mappedFile:          mapped,
 		decompressorFactory: decompressorFactory,
@@ -98,12 +92,12 @@ func (d *diskPartition) insertRows(_ []Row) ([]Row, error) {
 
 func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
 	name := marshalMetricName(metric, labels)
-	mt, ok := d.metrics[name]
+	mt, ok := d.meta.Metrics[name]
 	if !ok {
 		return nil, ErrNoDataPoints
 	}
 	r := bytes.NewReader(d.mappedFile)
-	if _, err := r.Seek(mt.offset, 0); err != nil {
+	if _, err := r.Seek(mt.Offset, 0); err != nil {
 		return nil, err
 	}
 
@@ -111,8 +105,8 @@ func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, e
 	if err != nil {
 		return nil, err
 	}
-	points := make([]*DataPoint, 0, mt.numPoints)
-	for i := 0; i < d.numPoints; i++ {
+	points := make([]*DataPoint, 0, mt.NumDataPoints)
+	for i := 0; i < int(mt.NumDataPoints); i++ {
 		point := &DataPoint{}
 		if err := decompressor.read(point); err != nil {
 			return nil, err
@@ -132,15 +126,15 @@ func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, e
 }
 
 func (d *diskPartition) minTimestamp() int64 {
-	return d.minT
+	return d.meta.MinTimestamp
 }
 
 func (d *diskPartition) maxTimestamp() int64 {
-	return d.maxT
+	return d.meta.MaxTimestamp
 }
 
 func (d *diskPartition) size() int {
-	return d.numPoints
+	return d.meta.NumDataPoints
 }
 
 // Disk partition is immutable.
