@@ -14,8 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/nakabonne/tstorage/internal/cgroup"
 	"github.com/nakabonne/tstorage/internal/timerpool"
 )
@@ -362,8 +360,7 @@ func (s *storage) flushPartitions() error {
 		// Start swapping in-memory partition for disk one.
 		// The disk partition will place at where in-memory one existed.
 
-		// TODO: Use https://github.com/oklog/ulid instead of uuid
-		dir := filepath.Join(s.dataPath, fmt.Sprintf("p-%s", uuid.New()))
+		dir := filepath.Join(s.dataPath, fmt.Sprintf("p-%d-%d", memPart.minTimestamp(), memPart.maxTimestamp()))
 		if err := s.flush(dir, memPart); err != nil {
 			return fmt.Errorf("failed to compact memory partition into %s: %w", dir, err)
 		}
