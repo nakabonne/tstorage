@@ -122,7 +122,7 @@ func WithTimestampPrecision(precision TimestampPrecision) Option {
 // The storage limits the number of concurrent goroutines to prevent from out of memory
 // errors and CPU trashing even if too many goroutines attempt to write.
 //
-// Defaults to 30m.
+// Defaults to 30s.
 func WithWriteTimeout(timeout time.Duration) Option {
 	return func(s *storage) {
 		s.writeTimeout = timeout
