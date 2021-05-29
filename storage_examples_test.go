@@ -29,7 +29,7 @@ func ExampleStorage_InsertRows_simple() {
 	if err != nil {
 		panic(err)
 	}
-	points, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000001)
+	points, err := storage.Select("metric1", nil, 1600000000, 1600000001)
 	if err != nil {
 		panic(err)
 	}
@@ -40,8 +40,8 @@ func ExampleStorage_InsertRows_simple() {
 	// timestamp: 1600000000, value: 0.1
 }
 
-// ExampleStorage_InsertRows_SelectDataPoints_concurrent simulates writing and reading in concurrent.
-func ExampleStorage_InsertRows_SelectDataPoints_concurrent() {
+// simulates writing and reading in concurrent.
+func ExampleStorage_InsertRows_Select_concurrent() {
 	storage, err := tstorage.NewStorage(
 		tstorage.WithPartitionDuration(5*time.Hour),
 		tstorage.WithTimestampPrecision(tstorage.Seconds),
@@ -82,7 +82,7 @@ func ExampleStorage_InsertRows_SelectDataPoints_concurrent() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				points, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600010000)
+				points, err := storage.Select("metric1", nil, 1600000000, 1600010000)
 				if errors.Is(err, tstorage.ErrNoDataPoints) {
 					return
 				}
@@ -100,7 +100,7 @@ func ExampleStorage_InsertRows_SelectDataPoints_concurrent() {
 }
 
 // simulates writing and reading on disk.
-func ExampleStorage_InsertRows_SelectDataPoints_on_disk() {
+func ExampleStorage_InsertRows_Select_on_disk() {
 	tmpDir, err := ioutil.TempDir("", "tstorage-example")
 	if err != nil {
 		panic(err)
@@ -131,7 +131,7 @@ func ExampleStorage_InsertRows_SelectDataPoints_on_disk() {
 	}
 
 	// Start read workers that read 100 times in concurrent, as fast as possible.
-	points, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000050)
+	points, err := storage.Select("metric1", nil, 1600000000, 1600000050)
 	if errors.Is(err, tstorage.ErrNoDataPoints) {
 		return
 	}
@@ -225,7 +225,7 @@ func ExampleStorage_InsertRows_concurrent() {
 	}
 	wg.Wait()
 
-	points, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000100)
+	points, err := storage.Select("metric1", nil, 1600000000, 1600000100)
 	if err != nil {
 		panic(err)
 	}
@@ -366,7 +366,7 @@ func ExampleStorage_InsertRows_concurrent_out_of_order() {
 	}
 	wg.Wait()
 
-	points, err := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000099)
+	points, err := storage.Select("metric1", nil, 1600000000, 1600000099)
 	if err != nil {
 		panic(err)
 	}

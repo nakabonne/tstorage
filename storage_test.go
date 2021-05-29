@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_storage_SelectDataPoints(t *testing.T) {
+func Test_storage_Select(t *testing.T) {
 	tests := []struct {
 		name    string
 		storage storage
@@ -104,7 +104,7 @@ func Test_storage_SelectDataPoints(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.storage.SelectDataPoints(tt.metric, tt.labels, tt.start, tt.end)
+			got, err := tt.storage.Select(tt.metric, tt.labels, tt.start, tt.end)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.want, got)

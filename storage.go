@@ -48,7 +48,8 @@ const (
 type Storage interface {
 	Reader
 	// InsertRows ingests the given rows to the time-series storage.
-	// If a timestamp isn't specified, it uses the machine's local timestamp in UTC.
+	// If the timestamp is empty, it uses the machine's local timestamp in UTC.
+	// The precision of timestamps is nanoseconds by default. It can be changed using WithTimestampPrecision.
 	InsertRows(rows []Row) error
 	// Close gracefully shutdowns by flushing any unwritten data to the underlying disk partition.
 	Close() error
@@ -56,9 +57,10 @@ type Storage interface {
 
 // Reader provides reading access to time series data.
 type Reader interface {
-	// SelectDataPoints gives back a list of data points  within the given start-end range.
-	// Keep in mind that start is inclusive, end is exclusive, and both must be Unix timestamp.
-	SelectDataPoints(metric string, labels []Label, start, end int64) (points []*DataPoint, err error)
+	// Select gives back a list of data points that matches a set of the given metric and
+	// labels within the given start-end range. Keep in mind that start is inclusive, end is exclusive,
+	// and both must be Unix timestamp. ErrNoDataPoints will be returned if no data points found.
+	Select(metric string, labels []Label, start, end int64) (points []*DataPoint, err error)
 }
 
 // Row includes a data point along with properties to identify a kind of metrics.
@@ -284,7 +286,7 @@ func (s *storage) getPartition() partition {
 	return p
 }
 
-func (s *storage) SelectDataPoints(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
+func (s *storage) Select(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
 	if metric == "" {
 		return nil, fmt.Errorf("metric must be set")
 	}

@@ -28,7 +28,7 @@ func main() {
 			DataPoint: tstorage.DataPoint{Timestamp: 1600000000, Value: 0.1},
 		},
 	})
-	points, _ := storage.SelectDataPoints("metric1", nil, 1600000000, 1600000001)
+	points, _ := storage.Select("metric1", nil, 1600000000, 1600000001)
 	for _, p := range points {
 		fmt.Printf("timestamp: %v, value: %v\n", p.Timestamp, p.Value)
 		// => timestamp: 1600000000, value: 0.1
@@ -70,7 +70,7 @@ func main() {
 			DataPoint: tstorage.DataPoint{Timestamp: 1600000000, Value: 0.1},
 		},
 	})
-	points, _ := storage.SelectDataPoints(metric, labels, 1600000000, 1600000001)
+	points, _ := storage.Select(metric, labels, 1600000000, 1600000001)
 	for _, p := range points {
 		fmt.Printf("timestamp: %v, value: %v\n", p.Timestamp, p.Value)
 		// => timestamp: 1600000000, value: 0.1
@@ -96,8 +96,8 @@ goarch: amd64
 pkg: github.com/nakabonne/tstorage
 cpu: Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz
 BenchmarkStorage_InsertRows-8                            	15981140	       303.4 ns/op	     169 B/op	       2 allocs/op
-BenchmarkStorage_SelectDataPointsAmongThousandPoints-8   	21974707	       217.5 ns/op	      56 B/op	       2 allocs/op
-BenchmarkStorage_SelectDataPointsAmongMillionPoints-8    	16951826	       282.4 ns/op	      55 B/op	       1 allocs/op
+BenchmarkStorage_SelectAmongThousandPoints-8   	21974707	       217.5 ns/op	      56 B/op	       2 allocs/op
+BenchmarkStorage_SelectAmongMillionPoints-8    	16951826	       282.4 ns/op	      55 B/op	       1 allocs/op
 PASS
 ok  	github.com/nakabonne/tstorage	17.166s
 ```
