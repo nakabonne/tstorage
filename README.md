@@ -101,6 +101,63 @@ Key benefits:
 - We can easily ignore all data outside of the partition time range when querying data points.
 - When a partition gets full, we can persist the data from our in-memory database by sequentially writing just a handful of larger files. We avoid any write-amplification and serve SSDs and HDDs equally well.
 
+### Macro layout
+There is a sequence of numbered partitions prefixed with `p-`.
+Each partition obviously holds two files: metadata and actual data.
+
+```
+$ tree ./data
+./data
+├── p-1600000000-1600000009
+│   ├── data
+│   └── meta.json
+├── p-1600000010-1600000019
+│   ├── data
+│   └── meta.json
+├── p-1600000020-1600000029
+│   ├── data
+│   └── meta.json
+├── p-1600000030-1600000039
+│   ├── data
+│   └── meta.json
+└── p-1600000040-1600000049
+    ├── data
+    └── meta.json
+```
+
+The content of `meta.json` looks kind of like:
+
+```json
+{
+  "minTimestamp": 1600000000,
+  "maxTimestamp": 1600000009,
+  "numDataPoints": 30,
+  "metrics": {
+    "metric1": {
+      "name": "metric1",
+      "offset": 0,
+      "minTimestamp": 1600000000,
+      "maxTimestamp": 1600000009,
+      "numDatapoints": 10
+    },
+    "metric2": {
+      "name": "metric2",
+      "offset": 113,
+      "minTimestamp": 1600000000,
+      "maxTimestamp": 1600000009,
+      "numDatapoints": 10
+    },
+    "metric3": {
+      "name": "metric3",
+      "offset": 193,
+      "minTimestamp": 1600000000,
+      "maxTimestamp": 1600000009,
+      "numDatapoints": 10
+    }
+  }
+}
+```
+
 ## Benchmarks
 Benchmark tests were made using Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz with 16GB of RAM on macOS 10.15.7
 
