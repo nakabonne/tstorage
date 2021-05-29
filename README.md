@@ -1,7 +1,7 @@
 # tstorage [![Go Reference](https://pkg.go.dev/badge/mod/github.com/nakabonne/tstorage.svg)](https://pkg.go.dev/mod/github.com/nakabonne/tstorage)
 
 `tstorage` is a fast local in-memory/on-disk storage package for time-series data with a straightforward API.
-It massively optimises ingestion as it allows the database to slice data extremely efficiently in small chunks and process it all in parallel.
+Especially ingestion is massively optimized as it provides goroutine safe capabilities of write into and read from TSDB that partitions data points by time.
 
 ## Usage
 By default, `tstorage.Storage` works as an in-memory database.
@@ -77,9 +77,6 @@ func main() {
 	}
 }
 ```
-
-<!-- TODO: Add an example for partition duration with description about partition-->
-
 
 For more examples see [the documentation](https://pkg.go.dev/github.com/nakabonne/tstorage#pkg-examples).
 
