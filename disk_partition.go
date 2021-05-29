@@ -43,7 +43,7 @@ type diskMetric struct {
 	Offset        int64  `json:"offset"`
 	MinTimestamp  int64  `json:"minTimestamp"`
 	MaxTimestamp  int64  `json:"maxTimestamp"`
-	NumDataPoints int64  `json:"numDatapoints"`
+	NumDataPoints int64  `json:"numDataPoints"`
 }
 
 // openDiskPartition first maps the data file into memory with memory-mapping.

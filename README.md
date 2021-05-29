@@ -1,7 +1,5 @@
 # tstorage [![Go Reference](https://pkg.go.dev/badge/mod/github.com/nakabonne/tstorage.svg)](https://pkg.go.dev/mod/github.com/nakabonne/tstorage)
 
-**NOTE: This package is under development. It's not ready for you to use.**
-
 `tstorage` is a fast local in-memory/on-disk storage package for time-series data with a straightforward API.
 It massively optimises ingestion as it allows the database to slice data extremely efficiently in small chunks and process it all in parallel.
 
@@ -121,7 +119,7 @@ Key benefits:
 - When a partition gets full, we can persist the data from our in-memory database by sequentially writing just a handful of larger files. We avoid any write-amplification and serve SSDs and HDDs equally well.
 
 ### Memory partition
-The memory partition stores data points in heap. The head partition is always memory partition. Its next one is also memory partition to accept out-of-order data points.
+The memory partition is writable and stores data points in heap. The head partition is always memory partition. Its next one is also memory partition to accept out-of-order data points.
 It stores data points in an ordered Slice, which offers excellent cache hit ratio compared to linked lists unless it gets updated way too often (like delete, add elements at random locations).
 
 ### Disk partition
@@ -131,58 +129,48 @@ Here is the macro layout of disk partitions:
 ```
 $ tree ./data
 ./data
-├── p-1600000000-1600000009
+├── p-1600000001-1600003600
 │   ├── data
 │   └── meta.json
-├── p-1600000010-1600000019
+├── p-1600003601-1600007200
 │   ├── data
 │   └── meta.json
-├── p-1600000020-1600000029
-│   ├── data
-│   └── meta.json
-├── p-1600000030-1600000039
-│   ├── data
-│   └── meta.json
-└── p-1600000040-1600000049
+└── p-1600007201-1600010800
     ├── data
     └── meta.json
 ```
 
 As you can see each partition holds two files: `meta.json` and `data`.
 The `data` is compressed, read-only and is memory-mapped with [mmap](https://en.wikipedia.org/wiki/Mmap) that maps a kernel address space to a user address space.
-Therefore, what it has to store in heap is only partition's metadata such as file offset of each metric.
-Just looking at `meta.json` gives us a good picture of what it stores:
+Therefore, what it has to store in heap is only partition's metadata. Just looking at `meta.json` gives us a good picture of what it stores:
 
 ```json
+$ cat ./data/p-1600000001-1600003600/meta.json
 {
-  "minTimestamp": 1600000000,
-  "maxTimestamp": 1600000009,
-  "numDataPoints": 30,
+  "minTimestamp": 1600000001,
+  "maxTimestamp": 1600003600,
+  "numDataPoints": 7200,
   "metrics": {
-    "metric1": {
-      "name": "metric1",
+    "metric-1": {
+      "name": "metric-1",
       "offset": 0,
-      "minTimestamp": 1600000000,
-      "maxTimestamp": 1600000009,
-      "numDatapoints": 10
+      "minTimestamp": 1600000001,
+      "maxTimestamp": 1600003600,
+      "numDataPoints": 3600
     },
-    "metric2": {
-      "name": "metric2",
-      "offset": 113,
-      "minTimestamp": 1600000000,
-      "maxTimestamp": 1600000009,
-      "numDatapoints": 10
-    },
-    "metric3": {
-      "name": "metric3",
-      "offset": 193,
-      "minTimestamp": 1600000000,
-      "maxTimestamp": 1600000009,
-      "numDatapoints": 10
+    "metric-2": {
+      "name": "metric-2",
+      "offset": 36014,
+      "minTimestamp": 1600000001,
+      "maxTimestamp": 1600003600,
+      "numDataPoints": 3600
     }
   }
 }
 ```
+
+Each metric has its own file offset of the beginning.
+Data point slice for each metric is compressed separately, so all we have to do when reading is to seek, and read the points off.
 
 
 ## Used by
