@@ -406,7 +406,6 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 			s.logger.Printf("unknown value found\n")
 			return false
 		}
-		// FIXME: Set offset correctly
 		offset, err := f.Seek(io.SeekStart, 1)
 		if err != nil {
 			s.logger.Printf("failed to set file offset of metric %q: %v\n", mt.name, err)
