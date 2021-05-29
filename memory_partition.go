@@ -152,7 +152,7 @@ func (m *memoryPartition) size() int {
 }
 
 func (m *memoryPartition) active() bool {
-	return m.maxTimestamp()-m.minTimestamp() < m.partitionDuration
+	return m.maxTimestamp()-m.minTimestamp()+1 < m.partitionDuration
 }
 
 // memoryMetric has a list of ordered data points that belong to the memoryMetric

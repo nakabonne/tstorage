@@ -93,7 +93,8 @@ func WithDataPath(dataPath string) Option {
 	}
 }
 
-// WithPartitionDuration specifies the timestamp range of partitions,
+// WithPartitionDuration specifies the timestamp range of partitions.
+// Once it exceeds the given time range, the new partition gets inserted.
 //
 // A partition is a chunk of time-series data with the timestamp range.
 // It acts as a fully independent database containing all data
@@ -408,7 +409,7 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 		// FIXME: Set offset correctly
 		offset, err := f.Seek(0, 1)
 		if err != nil {
-			s.logger.Printf("failed to set offset for metric: %v\n", err)
+			s.logger.Printf("failed to set file offset of metric %q: %v\n", mt.name, err)
 			return false
 		}
 		// TODO: Merge out-of-order data points
@@ -418,7 +419,7 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 		}
 		// Compress data points for each metric.
 		if err := compactor.write(points); err != nil {
-			s.logger.Printf("failed to compact data points: %v\n", err)
+			s.logger.Printf("failed to compact data points of %q: %v\n", mt.name, err)
 			return false
 		}
 		metrics[mt.name] = diskMetric{
