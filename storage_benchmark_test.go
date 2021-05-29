@@ -43,6 +43,6 @@ func BenchmarkStorage_SelectAmongMillionPoints(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 1; i < b.N; i++ {
-		_, _ = storage.Select("metric1", nil, 10, 100000)
+		_, _ = storage.Select("metric1", nil, 10, 100)
 	}
 }
