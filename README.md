@@ -1,5 +1,7 @@
 # tstorage [![Go Reference](https://pkg.go.dev/badge/mod/github.com/nakabonne/tstorage.svg)](https://pkg.go.dev/mod/github.com/nakabonne/tstorage)
 
+**This project is under development. It's not ready for you to use**
+
 `tstorage` is a fast local in-memory/on-disk storage package for time-series data with a straightforward API.
 Especially ingestion is massively optimized as it provides goroutine safe capabilities of write into and read from TSDB that partitions data points by time.
 
@@ -173,9 +175,12 @@ Data point slice for each metric is compressed separately, so all we have to do 
 ## Used by
 - [ali](https://github.com/nakabonne/ali) - A load testing tool capable of performing real-time analysis
 
-## References
+## Acknowledgements
+This project is implemented based on tons of existing ideas. What I especially got inspired by are:
 - https://misfra.me/state-of-the-state-part-iii
 - https://fabxc.org/tsdb
 - https://questdb.io/blog/2020/11/26/why-timeseries-data
 - https://www.xaprb.com/blog/2014/06/08/time-series-database-requirements
 - https://github.com/VictoriaMetrics/VictoriaMetrics
+
+A big thank you goes out to all of them!
