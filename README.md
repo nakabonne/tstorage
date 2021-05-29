@@ -85,11 +85,30 @@ func main() {
 
 For more examples see [the documentation](https://pkg.go.dev/github.com/nakabonne/tstorage#pkg-examples).
 
+## Benchmarks
+Benchmark tests were made using Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz with 16GB of RAM on macOS 10.15.7
+
+```
+$ go version
+go version go1.16.2 darwin/amd64
+
+$ go test -benchtime=4s -benchmem -bench=. .
+goos: darwin
+goarch: amd64
+pkg: github.com/nakabonne/tstorage
+cpu: Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz
+BenchmarkStorage_InsertRows-8                            	15981140	       303.4 ns/op	     169 B/op	       2 allocs/op
+BenchmarkStorage_SelectDataPointsAmongThousandPoints-8   	21974707	       217.5 ns/op	      56 B/op	       2 allocs/op
+BenchmarkStorage_SelectDataPointsAmongMillionPoints-8    	16951826	       282.4 ns/op	      55 B/op	       1 allocs/op
+PASS
+ok  	github.com/nakabonne/tstorage	17.166s
+```
+
 ## Internal
 Time-series database has specific characteristics in its workload.
 In terms of write operations, a time-series database has to ingest a tremendous amount of data points.
-In terms of read operations, in most cases, users want to query the recent data in real-time.
-Entirely, time-series data is mostly an append-only workload with delete operations performed in batches on less recent data.
+Time-series data is mostly an append-only workload with delete operations performed in batches on less recent data.
+In terms of read operations, in most cases, we want to retrieve multiple data points by specifying its time range, also, most recent first: query the recent data in real-time.
 
 Based on these characteristics, `tstorage` adopts a linear data model structure that partitions data points by time, totally different from the B-trees or LSM trees based storage engines.
 Each partition acts as a fully independent database containing all data points for its time range.
@@ -101,9 +120,13 @@ Key benefits:
 - We can easily ignore all data outside of the partition time range when querying data points.
 - When a partition gets full, we can persist the data from our in-memory database by sequentially writing just a handful of larger files. We avoid any write-amplification and serve SSDs and HDDs equally well.
 
-### Macro layout
-There is a sequence of numbered partitions prefixed with `p-`.
-Each partition obviously holds two files: metadata and actual data.
+### Memory partition
+The memory partition stores data points in heap. The head partition is always memory partition. Its next one is also memory partition to accept out-of-order data points.
+It stores data points in an ordered Slice, which offers excellent cache hit ratio compared to linked lists unless it gets updated way too often (like delete, add elements at random locations).
+
+### Disk partition
+The old memory partitions get compacted and persisted to the directory prefixed with `p-`, under the directory specified with the `WithDataPath` option.
+Here is the macro layout of disk partitions:
 
 ```
 $ tree ./data
@@ -125,7 +148,10 @@ $ tree ./data
     └── meta.json
 ```
 
-The content of `meta.json` looks kind of like:
+As you can see each partition holds two files: `meta.json` and `data`.
+The `data` is compressed, read-only and is memory-mapped with [mmap](https://en.wikipedia.org/wiki/Mmap) that maps a kernel address space to a user address space.
+Therefore, what it has to store in heap is only partition's metadata such as file offset of each metric.
+Just looking at `meta.json` gives us a good picture of what it stores:
 
 ```json
 {
@@ -158,24 +184,6 @@ The content of `meta.json` looks kind of like:
 }
 ```
 
-## Benchmarks
-Benchmark tests were made using Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz with 16GB of RAM on macOS 10.15.7
-
-```
-$ go version
-go version go1.16.2 darwin/amd64
-
-$ go test -benchtime=4s -benchmem -bench=. .
-goos: darwin
-goarch: amd64
-pkg: github.com/nakabonne/tstorage
-cpu: Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz
-BenchmarkStorage_InsertRows-8                            	15981140	       303.4 ns/op	     169 B/op	       2 allocs/op
-BenchmarkStorage_SelectDataPointsAmongThousandPoints-8   	21974707	       217.5 ns/op	      56 B/op	       2 allocs/op
-BenchmarkStorage_SelectDataPointsAmongMillionPoints-8    	16951826	       282.4 ns/op	      55 B/op	       1 allocs/op
-PASS
-ok  	github.com/nakabonne/tstorage	17.166s
-```
 
 ## Used by
 - [ali](https://github.com/nakabonne/ali) - A load testing tool capable of performing real-time analysis
