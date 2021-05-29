@@ -94,11 +94,11 @@ goos: darwin
 goarch: amd64
 pkg: github.com/nakabonne/tstorage
 cpu: Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz
-BenchmarkStorage_InsertRows-8                            	15981140	       303.4 ns/op	     169 B/op	       2 allocs/op
-BenchmarkStorage_SelectAmongThousandPoints-8   	21974707	       217.5 ns/op	      56 B/op	       2 allocs/op
-BenchmarkStorage_SelectAmongMillionPoints-8    	16951826	       282.4 ns/op	      55 B/op	       1 allocs/op
+BenchmarkStorage_InsertRows-8                  	14135685	       305.9 ns/op	     174 B/op	       2 allocs/op
+BenchmarkStorage_SelectAmongThousandPoints-8   	20548806	       222.4 ns/op	      56 B/op	       2 allocs/op
+BenchmarkStorage_SelectAmongMillionPoints-8    	16185709	       292.2 ns/op	      56 B/op	       1 allocs/op
 PASS
-ok  	github.com/nakabonne/tstorage	17.166s
+ok  	github.com/nakabonne/tstorage	16.501s
 ```
 
 ## Internal
