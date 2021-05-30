@@ -39,7 +39,7 @@ func main() {
 ```
 
 ### Examples
-To make time-series data persistent on disk, specify the path to directory that stores time-series data through `WithDataPath` option.
+To make time-series data persistent on disk, specify the path to directory that stores time-series data through [WithDataPath](https://pkg.go.dev/github.com/nakabonne/tstorage#WithDataPath) option.
 Also, in tstorage, the combination of metric name and labels preserves uniqueness.
 
 Here is an example of insertion a labeled metric to disk.
@@ -122,7 +122,7 @@ The memory partition is writable and stores data points in heap. The head partit
 It stores data points in an ordered Slice, which offers excellent cache hit ratio compared to linked lists unless it gets updated way too often (like delete, add elements at random locations).
 
 ### Disk partition
-The old memory partitions get compacted and persisted to the directory prefixed with `p-`, under the directory specified with the `WithDataPath` option.
+The old memory partitions get compacted and persisted to the directory prefixed with `p-`, under the directory specified with the [WithDataPath](https://pkg.go.dev/github.com/nakabonne/tstorage#WithDataPath) option.
 Here is the macro layout of disk partitions:
 
 ```
@@ -140,7 +140,7 @@ $ tree ./data
 ```
 
 As you can see each partition holds two files: `meta.json` and `data`.
-The `data` is compressed, read-only and is memory-mapped with [mmap](https://en.wikipedia.org/wiki/Mmap) that maps a kernel address space to a user address space.
+The `data` is compressed, read-only and is memory-mapped with [mmap(2)](https://en.wikipedia.org/wiki/Mmap) that maps a kernel address space to a user address space.
 Therefore, what it has to store in heap is only partition's metadata. Just looking at `meta.json` gives us a good picture of what it stores:
 
 ```json
@@ -171,9 +171,14 @@ $ cat ./data/p-1600000001-1600003600/meta.json
 Each metric has its own file offset of the beginning.
 Data point slice for each metric is compressed separately, so all we have to do when reading is to seek, and read the points off.
 
+### Out-of-order data points
+What data points get out-of-order in real-world applications is not uncommon because of network latency or clock synchronization issues; `tstorage` basically doesn't discard them.
+If out-of-order data points are within the range of the head memory partition, they get temporarily buffered and merged at flush time.
+Sometimes we should handle data points that cross a partition boundary. That is the reason why `tstorage` keeps more than one partition writable.
 
 ## Used by
 - [ali](https://github.com/nakabonne/ali) - A load testing tool capable of performing real-time analysis
+- [gosivy](https://github.com/nakabonne/gosivy) - Real-time visualization tool for Go process metrics
 
 ## Acknowledgements
 This project is implemented based on tons of existing ideas. What I especially got inspired by are:
