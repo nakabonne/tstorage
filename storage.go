@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -173,7 +172,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 	}
 
 	s.wal = newFileWal(filepath.Join(s.dataPath, "wal"))
-	if err := os.MkdirAll(s.dataPath, fs.ModePerm); err != nil {
+	if err := os.MkdirAll(s.dataPath, os.ModePerm); err != nil {
 		return nil, fmt.Errorf("failed to make data directory %s: %w", s.dataPath, err)
 	}
 	files, err := ioutil.ReadDir(s.dataPath)
@@ -186,7 +185,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 	}
 
 	// Read existent partitions from the disk.
-	isPartitionDir := func(f fs.FileInfo) bool {
+	isPartitionDir := func(f os.FileInfo) bool {
 		return f.IsDir() && partitionDirRegex.MatchString(f.Name())
 	}
 	partitions := make([]partition, 0, len(files))
@@ -390,7 +389,7 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 		return fmt.Errorf("dir path is required")
 	}
 
-	if err := os.MkdirAll(dirPath, fs.ModePerm); err != nil {
+	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		return fmt.Errorf("failed to make directory %q: %w", dirPath, err)
 	}
 
@@ -446,7 +445,7 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 		return fmt.Errorf("failed to encode metadata: %w", err)
 	}
 	metaPath := filepath.Join(dirPath, metaFileName)
-	if err := os.WriteFile(metaPath, b, fs.ModePerm); err != nil {
+	if err := os.WriteFile(metaPath, b, os.ModePerm); err != nil {
 		return fmt.Errorf("failed to write metadata to %s: %w", metaPath, err)
 	}
 	return nil
