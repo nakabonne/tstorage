@@ -10,5 +10,6 @@ type Logger interface {
 type nopLogger struct{}
 
 func (l *nopLogger) Printf(_ string, _ ...interface{}) {
+	// Do nothing
 	return
 }
