@@ -11,6 +11,28 @@ import (
 	"github.com/nakabonne/tstorage"
 )
 
+func ExampleNewStorage_withDataPath() {
+	// It will make time-series data persistent under "./data".
+	storage, err := tstorage.NewStorage(
+		tstorage.WithDataPath("./data"),
+	)
+	if err != nil {
+		panic(err)
+	}
+	storage.Close()
+}
+
+func ExampleNewStorage_withPartitionDuration() {
+	storage, err := tstorage.NewStorage(
+		tstorage.WithPartitionDuration(30*time.Minute),
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer storage.Close()
+}
+
 func ExampleStorage_InsertRows() {
 	storage, err := tstorage.NewStorage(
 		tstorage.WithTimestampPrecision(tstorage.Seconds),
