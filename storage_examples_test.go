@@ -11,7 +11,7 @@ import (
 	"github.com/nakabonne/tstorage"
 )
 
-func ExampleStorage_InsertRows_simple() {
+func ExampleStorage_InsertRows() {
 	storage, err := tstorage.NewStorage(
 		tstorage.WithTimestampPrecision(tstorage.Seconds),
 	)
