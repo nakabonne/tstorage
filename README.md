@@ -6,6 +6,8 @@
 Especially ingestion is massively optimized as it provides goroutine safe capabilities of write into and read from TSDB that partitions data points by time.
 
 ## Usage
+Currently, `tstorage` requires Go version 1.16 or greater
+
 By default, `tstorage.Storage` works as an in-memory database.
 The below example illustrates how to insert a row into the process memory and immediately select it.
 
