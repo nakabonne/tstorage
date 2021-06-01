@@ -1,15 +1,20 @@
 # tstorage [![Go Reference](https://pkg.go.dev/badge/mod/github.com/nakabonne/tstorage.svg)](https://pkg.go.dev/mod/github.com/nakabonne/tstorage)
 
-**NOTE: This project is under development. It's not ready for you to use**
-
 `tstorage` is a fast local in-memory/on-disk storage package for time-series data with a straightforward API.
 Especially ingestion is massively optimized as it provides goroutine safe capabilities of write into and read from TSDB that partitions data points by time.
+
+## Motivation
+I'm working on a couple of tools that handle a tremendous amount of time-series data, such as [Ali](https://github.com/nakabonne/ali) and [Gosivy](https://github.com/nakabonne/gosivy).
+Especially Ali, I had been facing a problem of increasing heap consumption over time as it's a load testing tool that aims to perform real-time analysis.
+I little poked around a fast TSDB library that offers simple APIs but eventually couldn't find it out, that's why I settled on writing this package myself.
+
+To see how much `tstorage` has helped improve Ali's performance, please see the release notes [here](https://github.com/nakabonne/ali/releases/tag/v0.7.0).
 
 ## Usage
 Currently, `tstorage` requires Go version 1.16 or greater
 
 By default, `tstorage.Storage` works as an in-memory database.
-The below example illustrates how to insert a row into the process memory and immediately select it.
+The below example illustrates how to insert a row into the memory and immediately select it.
 
 ```go
 package main
@@ -40,46 +45,34 @@ func main() {
 }
 ```
 
-### Examples
+### Using disk
 To make time-series data persistent on disk, specify the path to directory that stores time-series data through [WithDataPath](https://pkg.go.dev/github.com/nakabonne/tstorage#WithDataPath) option.
-Also, in tstorage, the combination of metric name and labels preserves uniqueness.
-
-Here is an example of insertion a labeled metric to disk.
 
 ```go
-package main
-
-import (
-	"fmt"
-
-	"github.com/nakabonne/tstorage"
+storage, _ := tstorage.NewStorage(
+	tstorage.WithDataPath("./data"),
 )
+defer storage.Close()
+```
 
-func main() {
-	storage, _ := tstorage.NewStorage(
-		tstorage.WithDataPath("./data"),
-		tstorage.WithTimestampPrecision(tstorage.Seconds),
-	)
-	defer storage.Close()
+### Labeled metrics
+In tstorage, you can identify a metric with combination of metric name and optional labels.
+Here is an example of insertion a labeled metric to the disk.
 
-	metric := "mem_alloc_bytes"
-	labels := []tstorage.Label{
-		{Name: "host", Value: "host-1"},
-	}
-
-	_ = storage.InsertRows([]tstorage.Row{
-		{
-			Metric:    metric,
-			Labels:    labels,
-			DataPoint: tstorage.DataPoint{Timestamp: 1600000000, Value: 0.1},
-		},
-	})
-	points, _ := storage.Select(metric, labels, 1600000000, 1600000001)
-	for _, p := range points {
-		fmt.Printf("timestamp: %v, value: %v\n", p.Timestamp, p.Value)
-		// => timestamp: 1600000000, value: 0.1
-	}
+```go
+metric := "mem_alloc_bytes"
+labels := []tstorage.Label{
+	{Name: "host", Value: "host-1"},
 }
+
+_ = storage.InsertRows([]tstorage.Row{
+	{
+		Metric:    metric,
+		Labels:    labels,
+		DataPoint: tstorage.DataPoint{Timestamp: 1600000000, Value: 0.1},
+	},
+})
+points, _ := storage.Select(metric, labels, 1600000000, 1600000001)
 ```
 
 For more examples see [the documentation](https://pkg.go.dev/github.com/nakabonne/tstorage#pkg-examples).
@@ -105,9 +98,10 @@ ok  	github.com/nakabonne/tstorage	16.501s
 
 ## Internal
 Time-series database has specific characteristics in its workload.
-In terms of write operations, a time-series database has to ingest a tremendous amount of data points.
-Time-series data is mostly an append-only workload with delete operations performed in batches on less recent data.
+In terms of write operations, a time-series database has to ingest a tremendous amount of data points ordered by time.
+Time-series data is immutable, mostly an append-only workload with delete operations performed in batches on less recent data.
 In terms of read operations, in most cases, we want to retrieve multiple data points by specifying its time range, also, most recent first: query the recent data in real-time.
+Also, luckily, time-series data is already indexed in time order.
 
 Based on these characteristics, `tstorage` adopts a linear data model structure that partitions data points by time, totally different from the B-trees or LSM trees based storage engines.
 Each partition acts as a fully independent database containing all data points for its time range.
@@ -183,11 +177,11 @@ Sometimes we should handle data points that cross a partition boundary. That is 
 - [gosivy](https://github.com/nakabonne/gosivy) - Real-time visualization tool for Go process metrics
 
 ## Acknowledgements
-This project is implemented based on tons of existing ideas. What I especially got inspired by are:
+This package is implemented based on tons of existing ideas. What I especially got inspired by are:
 - https://misfra.me/state-of-the-state-part-iii
 - https://fabxc.org/tsdb
 - https://questdb.io/blog/2020/11/26/why-timeseries-data
 - https://www.xaprb.com/blog/2014/06/08/time-series-database-requirements
 - https://github.com/VictoriaMetrics/VictoriaMetrics
 
-A big thank you goes out to all of them!
+A big "thank you!" goes out to all of them.
