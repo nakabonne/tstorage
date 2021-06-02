@@ -7,7 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"syscall"
+
+	"github.com/nakabonne/tstorage/internal/syscall"
 )
 
 const (
@@ -60,13 +61,7 @@ func openDiskPartition(dirPath string, decompressorFactory func(r io.Reader) (de
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch file info: %w", err)
 	}
-	mapped, err := syscall.Mmap(
-		int(f.Fd()),
-		0,
-		int(info.Size()),
-		syscall.PROT_READ,
-		syscall.MAP_SHARED,
-	)
+	mapped, err := syscall.Mmap(int(f.Fd()), int(info.Size()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to perform mmap: %w", err)
 	}
