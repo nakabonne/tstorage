@@ -181,7 +181,7 @@ This package is implemented based on tons of existing ideas. What I especially g
 - https://misfra.me/state-of-the-state-part-iii
 - https://fabxc.org/tsdb
 - https://questdb.io/blog/2020/11/26/why-timeseries-data
-- https://www.xaprb.com/blog/2014/06/08/time-series-database-requirements
+- https://akumuli.org/akumuli/2017/04/29/nbplustree
 - https://github.com/VictoriaMetrics/VictoriaMetrics
 
 A big "thank you!" goes out to all of them.

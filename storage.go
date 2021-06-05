@@ -150,6 +150,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 		// TODO: Make gzip compressor/decompressor changeable
 		compressorFactory:   newGzipCompressor,
 		decompressorFactory: newGzipDecompressor,
+		wal:                 &nopWAL{},
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -168,11 +169,20 @@ func NewStorage(opts ...Option) (Storage, error) {
 	}
 
 	if s.inMemoryMode() {
-		s.partitionList.insert(newMemoryPartition(nil, s.partitionDuration, s.timestampPrecision))
+		s.partitionList.insert(newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision))
 		return s, nil
 	}
 
-	s.wal = newFileWal(filepath.Join(s.dataPath, "wal"))
+	walPath := filepath.Join(s.dataPath, "wal")
+	if info, err := os.Stat(walPath); !os.IsNotExist(err) && !info.IsDir() {
+		// TODO: Start WAL recovery, which means to create a new memoryPartition based on WAL entries
+	}
+
+	w, err := newFileWal(walPath)
+	if err != nil {
+		return nil, err
+	}
+	s.wal = w
 	if err := os.MkdirAll(s.dataPath, fs.ModePerm); err != nil {
 		return nil, fmt.Errorf("failed to make data directory %s: %w", s.dataPath, err)
 	}

@@ -11,7 +11,7 @@ const (
 	operationInsert walOperation = iota
 )
 
-// wal is a write-ahead log.
+// wal represents a write-ahead log, which offers durability guarantees.
 // See more: https://martinfowler.com/articles/patterns-of-distributed-systems/wal.html
 type wal interface {
 	append(entry walEntry) error
