@@ -1,14 +1,14 @@
 # tstorage [![Go Reference](https://pkg.go.dev/badge/mod/github.com/nakabonne/tstorage.svg)](https://pkg.go.dev/mod/github.com/nakabonne/tstorage)
 
-`tstorage` is a fast local in-memory/on-disk storage package for time-series data with a straightforward API.
+`tstorage` is a lightweight local on-disk storage engine for time-series data with a straightforward API.
 Especially ingestion is massively optimized as it provides goroutine safe capabilities of write into and read from TSDB that partitions data points by time.
 
 ## Motivation
 I'm working on a couple of tools that handle a tremendous amount of time-series data, such as [Ali](https://github.com/nakabonne/ali) and [Gosivy](https://github.com/nakabonne/gosivy).
 Especially Ali, I had been facing a problem of increasing heap consumption over time as it's a load testing tool that aims to perform real-time analysis.
-I little poked around a fast TSDB library that offers simple APIs but eventually couldn't find it out, that's why I settled on writing this package myself.
+I little poked around a fast TSDB library that offers simple APIs but eventually nothing works as well as I'd like, that's why I settled on writing this package myself.
 
-To see how much `tstorage` has helped improve Ali's performance, please see the release notes [here](https://github.com/nakabonne/ali/releases/tag/v0.7.0).
+To see how much `tstorage` has helped improve Ali's performance, see the release notes [here](https://github.com/nakabonne/ali/releases/tag/v0.7.0).
 
 ## Usage
 Currently, `tstorage` requires Go version 1.16 or greater
@@ -101,7 +101,7 @@ Time-series database has specific characteristics in its workload.
 In terms of write operations, a time-series database has to ingest a tremendous amount of data points ordered by time.
 Time-series data is immutable, mostly an append-only workload with delete operations performed in batches on less recent data.
 In terms of read operations, in most cases, we want to retrieve multiple data points by specifying its time range, also, most recent first: query the recent data in real-time.
-Also, luckily, time-series data is already indexed in time order.
+Besides, time-series data is already indexed in time order.
 
 Based on these characteristics, `tstorage` adopts a linear data model structure that partitions data points by time, totally different from the B-trees or LSM trees based storage engines.
 Each partition acts as a fully independent database containing all data points for its time range.
@@ -109,13 +109,15 @@ Each partition acts as a fully independent database containing all data points f
 ![Screenshot](architecture.jpg)
 
 Key benefits:
-- We can insert data without reading (blind writes) and rewriting that do not change.
 - We can easily ignore all data outside of the partition time range when querying data points.
+- Most read operations work fast because recent data get cached in heap.
 - When a partition gets full, we can persist the data from our in-memory database by sequentially writing just a handful of larger files. We avoid any write-amplification and serve SSDs and HDDs equally well.
 
 ### Memory partition
 The memory partition is writable and stores data points in heap. The head partition is always memory partition. Its next one is also memory partition to accept out-of-order data points.
 It stores data points in an ordered Slice, which offers excellent cache hit ratio compared to linked lists unless it gets updated way too often (like delete, add elements at random locations).
+
+All incoming data is written to a write-ahead log (WAL) right before inserting into a memory partition to prevent data loss.
 
 ### Disk partition
 The old memory partitions get compacted and persisted to the directory prefixed with `p-`, under the directory specified with the [WithDataPath](https://pkg.go.dev/github.com/nakabonne/tstorage#WithDataPath) option.
