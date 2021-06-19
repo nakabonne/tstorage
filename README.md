@@ -106,7 +106,24 @@ Besides, time-series data is already indexed in time order.
 Based on these characteristics, `tstorage` adopts a linear data model structure that partitions data points by time, totally different from the B-trees or LSM trees based storage engines.
 Each partition acts as a fully independent database containing all data points for its time range.
 
-![Screenshot](architecture.jpg)
+
+```
+  │                 │
+  │               Write
+Read                │
+  │                 V
+  │      ┌───────────────────┐ max: 1600010800
+  ├─────>   Memory Partition
+  │      └───────────────────┘ min: 1600007201
+  │
+  │      ┌───────────────────┐ max: 1600007200
+  ├─────>   Memory Partition
+  │      └───────────────────┘ min: 1600003601
+  │
+  │      ┌───────────────────┐ max: 1600003600
+  └─────>    Disk Partition
+         └───────────────────┘ min: 1600000000
+```
 
 Key benefits:
 - We can easily ignore all data outside of the partition time range when querying data points.
