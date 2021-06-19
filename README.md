@@ -109,8 +109,8 @@ Each partition acts as a fully independent database containing all data points f
 
 ```
   │                 │
-  │               Write
-Read                │
+Read              Write
+  │                 │
   │                 V
   │      ┌───────────────────┐ max: 1600010800
   ├─────>   Memory Partition
@@ -121,7 +121,7 @@ Read                │
   │      └───────────────────┘ min: 1600003601
   │
   │      ┌───────────────────┐ max: 1600003600
-  └─────>    Disk Partition
+  └─────>   Disk Partition
          └───────────────────┘ min: 1600000000
 ```
 
