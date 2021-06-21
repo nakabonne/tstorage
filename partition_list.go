@@ -2,6 +2,7 @@ package tstorage
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -26,6 +27,8 @@ type partitionList interface {
 	// newIterator gives back the iterator object fot this list.
 	// If you need to inspect all nodes within the list, use this one.
 	newIterator() partitionIterator
+
+	String() string
 }
 
 // Iterator represents an iterator for partition list. The basic usage is:
@@ -189,6 +192,23 @@ func (p *partitionListImpl) setTail(node *partitionNode) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.tail = node
+}
+
+func (p *partitionListImpl) String() string {
+	b := &strings.Builder{}
+	iterator := p.newIterator()
+	for iterator.next() {
+		p := iterator.value()
+		if _, ok := p.(*memoryPartition); ok {
+			b.WriteString("[Memory Partition]")
+		} else if _, ok := p.(*diskPartition); ok {
+			b.WriteString("[Disk Partition]")
+		} else {
+			b.WriteString("[Unknown Partition]")
+		}
+		b.WriteString("->")
+	}
+	return strings.TrimSuffix(b.String(), "->")
 }
 
 // partitionNode wraps a partition to hold the pointer to the next one.
