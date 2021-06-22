@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -26,8 +25,6 @@ type diskPartition struct {
 	f *os.File
 	// memory-mapped file backed by f
 	mappedFile []byte
-
-	decompressorFactory func(r io.Reader) (decompressor, error)
 }
 
 // meta is a mapper for a meta file, which is put for each partition.
@@ -48,13 +45,15 @@ type diskMetric struct {
 }
 
 // openDiskPartition first maps the data file into memory with memory-mapping.
-func openDiskPartition(dirPath string, decompressorFactory func(r io.Reader) (decompressor, error)) (partition, error) {
+func openDiskPartition(dirPath string) (partition, error) {
 	if dirPath == "" {
 		return nil, fmt.Errorf("dir path is required")
 	}
-	f, err := os.Open(filepath.Join(dirPath, metaFileName))
+
+	// Map data to the memory
+	f, err := os.Open(filepath.Join(dirPath, dataFileName))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read metadata: %w", err)
+		return nil, fmt.Errorf("failed to read data file: %w", err)
 	}
 	defer f.Close()
 	info, err := f.Stat()
@@ -66,18 +65,22 @@ func openDiskPartition(dirPath string, decompressorFactory func(r io.Reader) (de
 		return nil, fmt.Errorf("failed to perform mmap: %w", err)
 	}
 
-	// Read metadata
+	// Read metadata to the heap
 	m := meta{}
-	decoder := json.NewDecoder(f)
+	mf, err := os.Open(filepath.Join(dirPath, metaFileName))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read metadata: %w", err)
+	}
+	defer mf.Close()
+	decoder := json.NewDecoder(mf)
 	if err := decoder.Decode(&m); err != nil {
 		return nil, fmt.Errorf("failed to decode metadata: %w", err)
 	}
 	return &diskPartition{
-		dirPath:             dirPath,
-		meta:                m,
-		f:                   f,
-		mappedFile:          mapped,
-		decompressorFactory: decompressorFactory,
+		dirPath:    dirPath,
+		meta:       m,
+		f:          f,
+		mappedFile: mapped,
 	}, nil
 }
 
@@ -92,19 +95,20 @@ func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, e
 		return nil, ErrNoDataPoints
 	}
 	r := bytes.NewReader(d.mappedFile)
-	if _, err := r.Seek(mt.Offset, 0); err != nil {
-		return nil, err
+	decoder, err := newSeriesDecoder(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate decoder: %w", err)
+	}
+	if _, err := decoder.seek(mt.Offset); err != nil {
+		return nil, fmt.Errorf("failed to seek: %w", err)
 	}
 
-	decompressor, err := d.decompressorFactory(r)
-	if err != nil {
-		return nil, err
-	}
+	// TODO: Use binary search to select points on disk
 	points := make([]*DataPoint, 0, mt.NumDataPoints)
 	for i := 0; i < int(mt.NumDataPoints); i++ {
 		point := &DataPoint{}
-		if err := decompressor.read(point); err != nil {
-			return nil, err
+		if err := decoder.decodePoint(point); err != nil {
+			return nil, fmt.Errorf("failed to decode point: %w", err)
 		}
 		if point.Timestamp < start {
 			continue
@@ -113,9 +117,6 @@ func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, e
 			break
 		}
 		points = append(points, point)
-	}
-	if err := decompressor.close(); err != nil {
-		return nil, err
 	}
 	return points, nil
 }
