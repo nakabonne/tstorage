@@ -147,10 +147,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 	s := &storage{
 		partitionList:  newPartitionList(),
 		workersLimitCh: make(chan struct{}, defaultWorkersLimit),
-		// TODO: Make gzip compressor/decompressor changeable
-		compressorFactory:   newGzipCompressor,
-		decompressorFactory: newGzipDecompressor,
-		wal:                 &nopWAL{},
+		wal:            &nopWAL{},
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -205,7 +202,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 			continue
 		}
 		path := filepath.Join(s.dataPath, f.Name())
-		part, err := openDiskPartition(path, s.decompressorFactory)
+		part, err := openDiskPartition(path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open disk partition for %s: %w", path, err)
 		}
@@ -225,13 +222,11 @@ func NewStorage(opts ...Option) (Storage, error) {
 type storage struct {
 	partitionList partitionList
 
-	wal                 wal
-	partitionDuration   time.Duration
-	timestampPrecision  TimestampPrecision
-	dataPath            string
-	writeTimeout        time.Duration
-	compressorFactory   func(w io.WriteSeeker) compressor
-	decompressorFactory func(r io.Reader) (decompressor, error)
+	wal                wal
+	partitionDuration  time.Duration
+	timestampPrecision TimestampPrecision
+	dataPath           string
+	writeTimeout       time.Duration
 
 	logger         Logger
 	workersLimitCh chan struct{}
@@ -312,6 +307,10 @@ func (s *storage) Select(metric string, labels []Label, start, end int64) ([]*Da
 		if part == nil {
 			return nil, fmt.Errorf("unexpected empty partition found")
 		}
+		if part.minTimestamp() == 0 {
+			// Skip the partition that has no points.
+			continue
+		}
 		if part.maxTimestamp() < start {
 			// No need to keep going anymore
 			break
@@ -383,7 +382,7 @@ func (s *storage) flushPartitions() error {
 		if err := s.flush(dir, memPart); err != nil {
 			return fmt.Errorf("failed to compact memory partition into %s: %w", dir, err)
 		}
-		newPart, err := openDiskPartition(dir, s.decompressorFactory)
+		newPart, err := openDiskPartition(dir)
 		if err != nil {
 			return fmt.Errorf("failed to generate disk partition for %s: %w", dir, err)
 		}
@@ -409,7 +408,7 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 		return fmt.Errorf("failed to create file %q: %w", dirPath, err)
 	}
 	defer f.Close()
-	compactor := s.compressorFactory(f)
+	encoder := newSeriesEncoder(f)
 
 	metrics := map[string]diskMetric{}
 	m.metrics.Range(func(key, value interface{}) bool {
@@ -429,7 +428,7 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 			points = append(points, p)
 		}
 		// Compress data points for each metric.
-		if err := compactor.write(points); err != nil {
+		if err := encoder.encodePoints(points); err != nil {
 			s.logger.Printf("failed to compact data points of %q: %v\n", mt.name, err)
 			return false
 		}
@@ -442,7 +441,7 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 		}
 		return true
 	})
-	if err := compactor.close(); err != nil {
+	if err := encoder.compress(); err != nil {
 		return err
 	}
 

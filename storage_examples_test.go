@@ -137,11 +137,6 @@ func ExampleStorage_InsertRows_Select_on_disk() {
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		if err := storage.Close(); err != nil {
-			panic(err)
-		}
-	}()
 
 	for timestamp := int64(1600000000); timestamp < 1600000050; timestamp++ {
 		err := storage.InsertRows([]tstorage.Row{
@@ -151,8 +146,25 @@ func ExampleStorage_InsertRows_Select_on_disk() {
 			panic(err)
 		}
 	}
+	if err := storage.Close(); err != nil {
+		panic(err)
+	}
 
-	// Start read workers that read 100 times in concurrent, as fast as possible.
+	// Re-open storage from the persisted data
+	storage, err = tstorage.NewStorage(
+		tstorage.WithDataPath(tmpDir),
+		tstorage.WithPartitionDuration(10*time.Second),
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := storage.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
 	points, err := storage.Select("metric1", nil, 1600000000, 1600000050)
 	if errors.Is(err, tstorage.ErrNoDataPoints) {
 		return

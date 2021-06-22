@@ -18,7 +18,7 @@ type fileWAL struct {
 }
 
 func newFileWal(filename string) (wal, error) {
-	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC|os.O_EXCL, 0666)
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create WAL: %w", err)
 	}

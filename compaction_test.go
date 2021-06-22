@@ -1,15 +1,6 @@
 package tstorage
 
-import (
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
-
+/*
 func Test_gzipCompressor_write_read(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "tstorage-gzip-test")
 	require.NoError(t, err)
@@ -58,3 +49,6 @@ func Test_gzipCompressor_write_read(t *testing.T) {
 	}
 	assert.Equal(t, want, output)
 }
+*/
+
+// FIXME: Test for gorilla

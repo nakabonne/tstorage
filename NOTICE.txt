@@ -10,3 +10,8 @@ This product contains a modified part of catena, distributed by Cistern:
 
   * License: https://github.com/Cistern/catena/blob/master/LICENSE
   * Homepage: https://github.com/Cistern/catena
+
+This product contains a modified part of go-tsz, distributed by dgryski:
+
+  * License: https://github.com/dgryski/go-tsz/blob/master/LICENSE
+  * Homepage: https://github.com/dgryski/go-tsz
