@@ -89,6 +89,7 @@ func newSeriesDecoder(r io.Reader) (seriesDecoder, error) {
 		return nil, fmt.Errorf("failed to new gzip reader: %w", err)
 	}
 
+	// FIXME: Use another way to write decompressed data and turn it into io.ReadSeeker
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, gzipReader); err != nil {
 		return nil, fmt.Errorf("failed to copy bytes: %w", err)
