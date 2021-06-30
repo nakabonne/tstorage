@@ -417,20 +417,18 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 			s.logger.Printf("unknown value found\n")
 			return false
 		}
+		// FIXME: Change the way to get offset. Currently, the encoder doesn't write each time. So the returned value of f.Seek will be 0 anytime.
 		offset, err := f.Seek(io.SeekStart, 1)
 		if err != nil {
 			s.logger.Printf("failed to set file offset of metric %q: %v\n", mt.name, err)
 			return false
 		}
 		// TODO: Merge out-of-order data points
-		points := make([]*DataPoint, 0, len(mt.points)+len(mt.outOfOrderPoints))
 		for _, p := range mt.points {
-			points = append(points, p)
-		}
-		// Compress data points for each metric.
-		if err := encoder.encodePoints(points); err != nil {
-			s.logger.Printf("failed to compact data points of %q: %v\n", mt.name, err)
-			return false
+			if err := encoder.encodePoint(p); err != nil {
+				s.logger.Printf("failed to encode a data point of %q: %v\n", mt.name, err)
+				return false
+			}
 		}
 		metrics[mt.name] = diskMetric{
 			Name:          mt.name,
