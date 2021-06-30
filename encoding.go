@@ -190,14 +190,14 @@ func newSeriesDecoder(r io.Reader) (seriesDecoder, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to new gzip reader: %w", err)
 	}
+	if err := gzipReader.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close: %w", err)
+	}
 
 	// FIXME: Use another way to make bstreamReader from gzipReader
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, gzipReader); err != nil {
 		return nil, fmt.Errorf("failed to copy bytes: %w", err)
-	}
-	if err := gzipReader.Close(); err != nil {
-		return nil, fmt.Errorf("failed to close: %w", err)
 	}
 	return &gorillaDecoder{
 		br: newBReader(buf.Bytes()),
