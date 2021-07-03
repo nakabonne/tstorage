@@ -206,6 +206,10 @@ func (m *memoryMetric) selectPoints(start, end int64) []*DataPoint {
 	maxTimestamp := atomic.LoadInt64(&m.maxTimestamp)
 	var startIdx, endIdx int
 
+	if end <= minTimestamp {
+		return []*DataPoint{}
+	}
+
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	if start <= minTimestamp {
