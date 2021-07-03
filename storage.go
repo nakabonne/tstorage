@@ -175,14 +175,14 @@ func NewStorage(opts ...Option) (Storage, error) {
 		// TODO: Start WAL recovery, which means to create a new memoryPartition based on WAL entries
 	}
 
+	if err := os.MkdirAll(s.dataPath, fs.ModePerm); err != nil {
+		return nil, fmt.Errorf("failed to make data directory %s: %w", s.dataPath, err)
+	}
 	w, err := newFileWal(walPath)
 	if err != nil {
 		return nil, err
 	}
 	s.wal = w
-	if err := os.MkdirAll(s.dataPath, fs.ModePerm); err != nil {
-		return nil, fmt.Errorf("failed to make data directory %s: %w", s.dataPath, err)
-	}
 	files, err := ioutil.ReadDir(s.dataPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open data directory: %w", err)
@@ -319,6 +319,9 @@ func (s *storage) Select(metric string, labels []Label, start, end int64) ([]*Da
 			continue
 		}
 		ps, err := part.selectDataPoints(metric, labels, start, end)
+		if errors.Is(err, ErrNoDataPoints) {
+			continue
+		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to select data points: %w", err)
 		}
