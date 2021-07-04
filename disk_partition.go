@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -99,7 +100,7 @@ func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, e
 		return nil, ErrNoDataPoints
 	}
 	r := bytes.NewReader(d.mappedFile)
-	if _, err := r.Seek(mt.Offset, 0); err != nil {
+	if _, err := r.Seek(mt.Offset, io.SeekStart); err != nil {
 		return nil, fmt.Errorf("failed to seek: %w", err)
 	}
 	decoder, err := newSeriesDecoder(r)
