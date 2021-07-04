@@ -51,7 +51,8 @@ func openDiskPartition(dirPath string) (partition, error) {
 	}
 
 	// Map data to the memory
-	f, err := os.Open(filepath.Join(dirPath, dataFileName))
+	dataPath := filepath.Join(dirPath, dataFileName)
+	f, err := os.Open(dataPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read data file: %w", err)
 	}
@@ -59,6 +60,10 @@ func openDiskPartition(dirPath string) (partition, error) {
 	info, err := f.Stat()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch file info: %w", err)
+	}
+	// FIXME: Look up why sometimes zero size file given
+	if info.Size() == 0 {
+		return nil, fmt.Errorf("the size of %s is zero", dataPath)
 	}
 	mapped, err := syscall.Mmap(int(f.Fd()), int(info.Size()))
 	if err != nil {
