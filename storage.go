@@ -203,6 +203,9 @@ func NewStorage(opts ...Option) (Storage, error) {
 		}
 		path := filepath.Join(s.dataPath, f.Name())
 		part, err := openDiskPartition(path)
+		if errors.Is(err, ErrNoDataPoints) {
+			continue
+		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to open disk partition for %s: %w", path, err)
 		}
@@ -389,6 +392,11 @@ func (s *storage) flushPartitions() error {
 		if err != nil {
 			return fmt.Errorf("failed to generate disk partition for %s: %w", dir, err)
 		}
+		if errors.Is(err, ErrNoDataPoints) {
+			if err := s.partitionList.remove(part); err != nil {
+				return fmt.Errorf("failed to remove partition: %w", err)
+			}
+		}
 		if err := s.partitionList.swap(part, newPart); err != nil {
 			return fmt.Errorf("failed to swap partitions: %w", err)
 		}
@@ -420,7 +428,6 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 			s.logger.Printf("unknown value found\n")
 			return false
 		}
-		// FIXME: Change the way to get offset. Currently, the encoder doesn't write each time. So the returned value of f.Seek will be 0 anytime.
 		offset, err := f.Seek(io.SeekStart, 1)
 		if err != nil {
 			s.logger.Printf("failed to set file offset of metric %q: %v\n", mt.name, err)
@@ -429,9 +436,13 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 		// TODO: Merge out-of-order data points
 		for _, p := range mt.points {
 			if err := encoder.encodePoint(p); err != nil {
-				s.logger.Printf("failed to encode a data point of %q: %v\n", mt.name, err)
+				s.logger.Printf("failed to encode a data point that metric is %q: %v\n", mt.name, err)
 				return false
 			}
+		}
+		if err := encoder.flush(); err != nil {
+			s.logger.Printf("failed to flush data points that metric is %q: %v", mt.name, err)
+			return false
 		}
 		metrics[mt.name] = diskMetric{
 			Name:          mt.name,
@@ -442,9 +453,6 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 		}
 		return true
 	})
-	if err := encoder.compress(); err != nil {
-		return err
-	}
 
 	b, err := json.Marshal(&meta{
 		MinTimestamp:  m.minTimestamp(),

@@ -39,6 +39,13 @@ func (b *bstream) bytes() []byte {
 	return b.stream
 }
 
+// reset resets the buffer to be empty,
+// but it retains the underlying storage for use by future writes.
+func (b *bstream) reset() {
+	b.stream = b.stream[:0]
+	b.count = 0
+}
+
 type bit bool
 
 const (
