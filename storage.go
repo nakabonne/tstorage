@@ -389,13 +389,14 @@ func (s *storage) flushPartitions() error {
 			return fmt.Errorf("failed to compact memory partition into %s: %w", dir, err)
 		}
 		newPart, err := openDiskPartition(dir)
-		if err != nil {
-			return fmt.Errorf("failed to generate disk partition for %s: %w", dir, err)
-		}
 		if errors.Is(err, ErrNoDataPoints) {
 			if err := s.partitionList.remove(part); err != nil {
 				return fmt.Errorf("failed to remove partition: %w", err)
 			}
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("failed to generate disk partition for %s: %w", dir, err)
 		}
 		if err := s.partitionList.swap(part, newPart); err != nil {
 			return fmt.Errorf("failed to swap partitions: %w", err)
