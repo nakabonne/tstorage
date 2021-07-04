@@ -105,7 +105,7 @@ func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, e
 	}
 	decoder, err := newSeriesDecoder(r)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate decoder: %w", err)
+		return nil, fmt.Errorf("failed to generate decoder for metric %q in %q: %w", name, d.dirPath, err)
 	}
 
 	// TODO: Use binary search to select points on disk
@@ -113,7 +113,7 @@ func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, e
 	for i := 0; i < int(mt.NumDataPoints); i++ {
 		point := &DataPoint{}
 		if err := decoder.decodePoint(point); err != nil {
-			return nil, fmt.Errorf("failed to decode point: %w", err)
+			return nil, fmt.Errorf("failed to decode point of metric %q in %q: %w", name, d.dirPath, err)
 		}
 		if point.Timestamp < start {
 			continue

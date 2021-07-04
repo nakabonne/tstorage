@@ -131,13 +131,24 @@ func (e *gorillaEncoder) encodePoint(point *DataPoint) error {
 }
 
 // flush writes the buffered-bytes into the backend io.Writer
+// and resets everything used for computation.
 func (e *gorillaEncoder) flush() error {
 	// FIXME: Compress with ZStandard
 	_, err := e.w.Write(e.buf.bytes())
 	if err != nil {
 		return fmt.Errorf("failed to flush buffered bytes: %w", err)
 	}
+
 	e.buf.reset()
+	e.t0 = 0
+	e.t1 = 0
+	e.t = 0
+	e.tDelta = 0
+	e.v = 0
+	e.v = 0
+	e.leading = 0
+	e.trailing = 0
+
 	return nil
 }
 
@@ -210,11 +221,11 @@ func (d *gorillaDecoder) decodePoint(dst *DataPoint) error {
 	if d.numRead == 0 {
 		t, err := binary.ReadVarint(&d.br)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read Timestamp of T0: %w", err)
 		}
 		v, err := d.br.readBits(64)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read Value of T0: %w", err)
 		}
 		d.t = t
 		d.v = math.Float64frombits(v)

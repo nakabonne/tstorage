@@ -299,7 +299,7 @@ func ExampleStorage_Select_from_disk() {
 
 	storage, err := tstorage.NewStorage(
 		tstorage.WithDataPath(tmpDir),
-		tstorage.WithPartitionDuration(10*time.Second),
+		tstorage.WithPartitionDuration(100*time.Second),
 		tstorage.WithTimestampPrecision(tstorage.Seconds),
 	)
 	if err != nil {
@@ -417,56 +417,56 @@ func ExampleStorage_Select_from_disk() {
 	//Timestamp: 1600000048, Value: 0.1
 	//Timestamp: 1600000049, Value: 0.1
 	//Data points of metric2:
-	//Timestamp: 1600000050, Value: 0.2
-	//Timestamp: 1600000051, Value: 0.2
-	//Timestamp: 1600000052, Value: 0.2
-	//Timestamp: 1600000053, Value: 0.2
-	//Timestamp: 1600000054, Value: 0.2
-	//Timestamp: 1600000055, Value: 0.2
-	//Timestamp: 1600000056, Value: 0.2
-	//Timestamp: 1600000057, Value: 0.2
-	//Timestamp: 1600000058, Value: 0.2
-	//Timestamp: 1600000059, Value: 0.2
-	//Timestamp: 1600000060, Value: 0.2
-	//Timestamp: 1600000061, Value: 0.2
-	//Timestamp: 1600000062, Value: 0.2
-	//Timestamp: 1600000063, Value: 0.2
-	//Timestamp: 1600000064, Value: 0.2
-	//Timestamp: 1600000065, Value: 0.2
-	//Timestamp: 1600000066, Value: 0.2
-	//Timestamp: 1600000067, Value: 0.2
-	//Timestamp: 1600000068, Value: 0.2
-	//Timestamp: 1600000069, Value: 0.2
-	//Timestamp: 1600000070, Value: 0.2
-	//Timestamp: 1600000071, Value: 0.2
-	//Timestamp: 1600000072, Value: 0.2
-	//Timestamp: 1600000073, Value: 0.2
-	//Timestamp: 1600000074, Value: 0.2
-	//Timestamp: 1600000075, Value: 0.2
-	//Timestamp: 1600000076, Value: 0.2
-	//Timestamp: 1600000077, Value: 0.2
-	//Timestamp: 1600000078, Value: 0.2
-	//Timestamp: 1600000079, Value: 0.2
-	//Timestamp: 1600000080, Value: 0.2
-	//Timestamp: 1600000081, Value: 0.2
-	//Timestamp: 1600000082, Value: 0.2
-	//Timestamp: 1600000083, Value: 0.2
-	//Timestamp: 1600000084, Value: 0.2
-	//Timestamp: 1600000085, Value: 0.2
-	//Timestamp: 1600000086, Value: 0.2
-	//Timestamp: 1600000087, Value: 0.2
-	//Timestamp: 1600000088, Value: 0.2
-	//Timestamp: 1600000089, Value: 0.2
-	//Timestamp: 1600000090, Value: 0.2
-	//Timestamp: 1600000091, Value: 0.2
-	//Timestamp: 1600000092, Value: 0.2
-	//Timestamp: 1600000093, Value: 0.2
-	//Timestamp: 1600000094, Value: 0.2
-	//Timestamp: 1600000095, Value: 0.2
-	//Timestamp: 1600000096, Value: 0.2
-	//Timestamp: 1600000097, Value: 0.2
-	//Timestamp: 1600000098, Value: 0.2
-	//Timestamp: 1600000099, Value: 0.2
+	//Timestamp: 1600000000, Value: 0.2
+	//Timestamp: 1600000001, Value: 0.2
+	//Timestamp: 1600000002, Value: 0.2
+	//Timestamp: 1600000003, Value: 0.2
+	//Timestamp: 1600000004, Value: 0.2
+	//Timestamp: 1600000005, Value: 0.2
+	//Timestamp: 1600000006, Value: 0.2
+	//Timestamp: 1600000007, Value: 0.2
+	//Timestamp: 1600000008, Value: 0.2
+	//Timestamp: 1600000009, Value: 0.2
+	//Timestamp: 1600000010, Value: 0.2
+	//Timestamp: 1600000011, Value: 0.2
+	//Timestamp: 1600000012, Value: 0.2
+	//Timestamp: 1600000013, Value: 0.2
+	//Timestamp: 1600000014, Value: 0.2
+	//Timestamp: 1600000015, Value: 0.2
+	//Timestamp: 1600000016, Value: 0.2
+	//Timestamp: 1600000017, Value: 0.2
+	//Timestamp: 1600000018, Value: 0.2
+	//Timestamp: 1600000019, Value: 0.2
+	//Timestamp: 1600000020, Value: 0.2
+	//Timestamp: 1600000021, Value: 0.2
+	//Timestamp: 1600000022, Value: 0.2
+	//Timestamp: 1600000023, Value: 0.2
+	//Timestamp: 1600000024, Value: 0.2
+	//Timestamp: 1600000025, Value: 0.2
+	//Timestamp: 1600000026, Value: 0.2
+	//Timestamp: 1600000027, Value: 0.2
+	//Timestamp: 1600000028, Value: 0.2
+	//Timestamp: 1600000029, Value: 0.2
+	//Timestamp: 1600000030, Value: 0.2
+	//Timestamp: 1600000031, Value: 0.2
+	//Timestamp: 1600000032, Value: 0.2
+	//Timestamp: 1600000033, Value: 0.2
+	//Timestamp: 1600000034, Value: 0.2
+	//Timestamp: 1600000035, Value: 0.2
+	//Timestamp: 1600000036, Value: 0.2
+	//Timestamp: 1600000037, Value: 0.2
+	//Timestamp: 1600000038, Value: 0.2
+	//Timestamp: 1600000039, Value: 0.2
+	//Timestamp: 1600000040, Value: 0.2
+	//Timestamp: 1600000041, Value: 0.2
+	//Timestamp: 1600000042, Value: 0.2
+	//Timestamp: 1600000043, Value: 0.2
+	//Timestamp: 1600000044, Value: 0.2
+	//Timestamp: 1600000045, Value: 0.2
+	//Timestamp: 1600000046, Value: 0.2
+	//Timestamp: 1600000047, Value: 0.2
+	//Timestamp: 1600000048, Value: 0.2
+	//Timestamp: 1600000049, Value: 0.2
 }
 
 func ExampleStorage_InsertRows_concurrent() {
