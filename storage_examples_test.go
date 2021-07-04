@@ -306,7 +306,7 @@ func ExampleStorage_Select_from_disk() {
 		panic(err)
 	}
 
-	// Ingest data points of metric1
+	// Ingest data points
 	for timestamp := int64(1600000000); timestamp < 1600000050; timestamp++ {
 		err := storage.InsertRows([]tstorage.Row{
 			{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: timestamp, Value: 0.1}},
@@ -314,16 +314,14 @@ func ExampleStorage_Select_from_disk() {
 		if err != nil {
 			panic(err)
 		}
-	}
-	// Ingest data points of metric2
-	for timestamp := int64(1600000050); timestamp < 1600000100; timestamp++ {
-		err := storage.InsertRows([]tstorage.Row{
+		err = storage.InsertRows([]tstorage.Row{
 			{Metric: "metric2", DataPoint: tstorage.DataPoint{Timestamp: timestamp, Value: 0.2}},
 		})
 		if err != nil {
 			panic(err)
 		}
 	}
+	// Flush all data points
 	if err := storage.Close(); err != nil {
 		panic(err)
 	}
@@ -355,7 +353,7 @@ func ExampleStorage_Select_from_disk() {
 		fmt.Printf("Timestamp: %v, Value: %v\n", p.Timestamp, p.Value)
 	}
 
-	points2, err := storage.Select("metric2", nil, 1600000050, 1600000100)
+	points2, err := storage.Select("metric2", nil, 1600000000, 1600000050)
 	if errors.Is(err, tstorage.ErrNoDataPoints) {
 		return
 	}
