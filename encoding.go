@@ -25,8 +25,6 @@
 package tstorage
 
 import (
-	"bytes"
-	"compress/gzip"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -36,7 +34,7 @@ import (
 
 type seriesEncoder interface {
 	encodePoint(point *DataPoint) error
-	compress() error
+	flush() error
 }
 
 func newSeriesEncoder(w io.Writer) seriesEncoder {
@@ -132,15 +130,26 @@ func (e *gorillaEncoder) encodePoint(point *DataPoint) error {
 	return nil
 }
 
-// compress compress the buffered-date and writes them into the backend io.Writer
-func (e *gorillaEncoder) compress() error {
-	// FIXME: Compress with ZStandard instead of gzip
-
-	gzipWriter := gzip.NewWriter(e.w)
-	if _, err := gzipWriter.Write(e.buf.bytes()); err != nil {
-		return err
+// flush writes the buffered-bytes into the backend io.Writer
+// and resets everything used for computation.
+func (e *gorillaEncoder) flush() error {
+	// FIXME: Compress with ZStandard
+	_, err := e.w.Write(e.buf.bytes())
+	if err != nil {
+		return fmt.Errorf("failed to flush buffered bytes: %w", err)
 	}
-	return gzipWriter.Close()
+
+	e.buf.reset()
+	e.t0 = 0
+	e.t1 = 0
+	e.t = 0
+	e.tDelta = 0
+	e.v = 0
+	e.v = 0
+	e.leading = 0
+	e.trailing = 0
+
+	return nil
 }
 
 func (e *gorillaEncoder) writeVDelta(v float64) {
@@ -184,23 +193,13 @@ type seriesDecoder interface {
 
 // newSeriesDecoder decompress data from the given Reader, then holds the decompressed data
 func newSeriesDecoder(r io.Reader) (seriesDecoder, error) {
-	// FIXME: Decompress with ZStandard instead of gzip
-
-	gzipReader, err := gzip.NewReader(r)
+	// FIXME: Stop copying entire bytes to make BReader
+	b, err := io.ReadAll(r)
 	if err != nil {
-		return nil, fmt.Errorf("failed to new gzip reader: %w", err)
-	}
-	if err := gzipReader.Close(); err != nil {
-		return nil, fmt.Errorf("failed to close: %w", err)
-	}
-
-	// FIXME: Use another way to make bstreamReader from gzipReader
-	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, gzipReader); err != nil {
-		return nil, fmt.Errorf("failed to copy bytes: %w", err)
+		return nil, fmt.Errorf("failed to read all bytes: %w", err)
 	}
 	return &gorillaDecoder{
-		br: newBReader(buf.Bytes()),
+		br: newBReader(b),
 	}, nil
 }
 
@@ -222,11 +221,11 @@ func (d *gorillaDecoder) decodePoint(dst *DataPoint) error {
 	if d.numRead == 0 {
 		t, err := binary.ReadVarint(&d.br)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read Timestamp of T0: %w", err)
 		}
 		v, err := d.br.readBits(64)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read Value of T0: %w", err)
 		}
 		d.t = t
 		d.v = math.Float64frombits(v)

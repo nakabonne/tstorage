@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -51,7 +52,8 @@ func openDiskPartition(dirPath string) (partition, error) {
 	}
 
 	// Map data to the memory
-	f, err := os.Open(filepath.Join(dirPath, dataFileName))
+	dataPath := filepath.Join(dirPath, dataFileName)
+	f, err := os.Open(dataPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read data file: %w", err)
 	}
@@ -59,6 +61,9 @@ func openDiskPartition(dirPath string) (partition, error) {
 	info, err := f.Stat()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch file info: %w", err)
+	}
+	if info.Size() == 0 {
+		return nil, ErrNoDataPoints
 	}
 	mapped, err := syscall.Mmap(int(f.Fd()), int(info.Size()))
 	if err != nil {
@@ -95,12 +100,12 @@ func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, e
 		return nil, ErrNoDataPoints
 	}
 	r := bytes.NewReader(d.mappedFile)
-	if _, err := r.Seek(mt.Offset, 0); err != nil {
+	if _, err := r.Seek(mt.Offset, io.SeekStart); err != nil {
 		return nil, fmt.Errorf("failed to seek: %w", err)
 	}
 	decoder, err := newSeriesDecoder(r)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate decoder: %w", err)
+		return nil, fmt.Errorf("failed to generate decoder for metric %q in %q: %w", name, d.dirPath, err)
 	}
 
 	// TODO: Use binary search to select points on disk
@@ -108,7 +113,7 @@ func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, e
 	for i := 0; i < int(mt.NumDataPoints); i++ {
 		point := &DataPoint{}
 		if err := decoder.decodePoint(point); err != nil {
-			return nil, fmt.Errorf("failed to decode point: %w", err)
+			return nil, fmt.Errorf("failed to decode point of metric %q in %q: %w", name, d.dirPath, err)
 		}
 		if point.Timestamp < start {
 			continue
