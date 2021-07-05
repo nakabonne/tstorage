@@ -133,7 +133,7 @@ func (e *gorillaEncoder) encodePoint(point *DataPoint) error {
 // flush writes the buffered-bytes into the backend io.Writer
 // and resets everything used for computation.
 func (e *gorillaEncoder) flush() error {
-	// FIXME: Compress with ZStandard
+	// TODO: Compress with ZStandard
 	_, err := e.w.Write(e.buf.bytes())
 	if err != nil {
 		return fmt.Errorf("failed to flush buffered bytes: %w", err)
@@ -193,7 +193,7 @@ type seriesDecoder interface {
 
 // newSeriesDecoder decompress data from the given Reader, then holds the decompressed data
 func newSeriesDecoder(r io.Reader) (seriesDecoder, error) {
-	// FIXME: Stop copying entire bytes to make BReader
+	// TODO: Stop copying entire bytes, then make it possible to to make bstreamReader from io.Reader
 	b, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read all bytes: %w", err)
