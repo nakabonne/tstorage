@@ -551,7 +551,7 @@ func ExampleStorage_Select_from_disk_out_of_order() {
 		}
 	}()
 
-	points, err := storage.Select("metric1", nil, 1600000000, 1600000007)
+	points, err := storage.Select("metric1", nil, 1600000000, 1600000004)
 	if errors.Is(err, tstorage.ErrNoDataPoints) {
 		return
 	}
