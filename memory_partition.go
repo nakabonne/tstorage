@@ -232,8 +232,8 @@ func (m *memoryMetric) selectPoints(start, end int64) []*DataPoint {
 	return m.points[startIdx:endIdx]
 }
 
-// iterateAllPoints iterates over all metric data points in order, including
-// out of order data points.
+// iterateAllPoints calls the given function f on all metric data points in order by timestamp,
+// including outOfOrderPoints. Returns immediately if f errors.
 func (m *memoryMetric) iterateAllPoints(f func(*DataPoint) error) error {
 	sort.Slice(m.outOfOrderPoints, func(i, j int) bool {
 		return m.outOfOrderPoints[i].Timestamp < m.outOfOrderPoints[j].Timestamp
