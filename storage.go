@@ -468,6 +468,7 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 			}
 			pi++
 		}
+		totalNumPoints := mt.size + int64(len(mt.outOfOrderPoints))
 		// for _, p := range mt.points {
 		// 	if err := encoder.encodePoint(p); err != nil {
 		// 		s.logger.Printf("failed to encode a data point that metric is %q: %v\n", mt.name, err)
@@ -483,7 +484,7 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 			Offset:        offset,
 			MinTimestamp:  mt.minTimestamp,
 			MaxTimestamp:  mt.maxTimestamp,
-			NumDataPoints: mt.size,
+			NumDataPoints: totalNumPoints,
 		}
 		return true
 	})
