@@ -1,10 +1,12 @@
 package tstorage
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_memoryPartition_InsertRows(t *testing.T) {
@@ -135,6 +137,35 @@ func Test_memoryPartition_SelectDataPoints(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func Test_memoryMetric_IterateAllPoints_sorted(t *testing.T) {
+	mt := memoryMetric{
+		points: []*DataPoint{
+			{Timestamp: 1, Value: 0.1},
+			{Timestamp: 3, Value: 0.1},
+		},
+		outOfOrderPoints: []*DataPoint{
+			{Timestamp: 2, Value: 0.1},
+		},
+	}
+	allTimestamps := make([]int64, 0, 3)
+	err := mt.iterateAllPoints(func(p *DataPoint) error {
+		allTimestamps = append(allTimestamps, p.Timestamp)
+		return nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, []int64{1, 2, 3}, allTimestamps)
+}
+
+func Test_memoryMetric_IterateAllPoints_error(t *testing.T) {
+	mt := memoryMetric{
+		points: []*DataPoint{{Timestamp: 1, Value: 0.1}},
+	}
+	err := mt.iterateAllPoints(func(p *DataPoint) error {
+		return fmt.Errorf("some error")
+	})
+	assert.Error(t, err)
 }
 
 func Test_toUnix(t *testing.T) {
