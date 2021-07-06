@@ -434,51 +434,19 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 			s.logger.Printf("failed to set file offset of metric %q: %v\n", mt.name, err)
 			return false
 		}
-		// TODO: Merge out-of-order data points
-		sort.Slice(mt.outOfOrderPoints, func(i, j int) bool {
-			return mt.outOfOrderPoints[i].Timestamp < mt.outOfOrderPoints[j].Timestamp
-		})
-		var oi, pi int
-		for oi < len(mt.outOfOrderPoints) && pi < len(mt.points) {
-			if mt.outOfOrderPoints[oi].Timestamp < mt.points[pi].Timestamp {
-				if err := encoder.encodePoint(mt.outOfOrderPoints[oi]); err != nil {
-					s.logger.Printf("failed to encode a data point that metric is %q: %v\n", mt.name, err)
-					return false
-				}
-				oi++
-			} else {
-				if err := encoder.encodePoint(mt.points[pi]); err != nil {
-					s.logger.Printf("failed to encode a data point that metric is %q: %v\n", mt.name, err)
-					return false
-				}
-				pi++
-			}
+
+		err = mt.iterateAllPoints(encoder.encodePoint)
+		if err != nil {
+			s.logger.Printf("failed to encode a data point that metric is %q: %v\n", mt.name, err)
+			return false
 		}
-		for oi < len(mt.outOfOrderPoints) {
-			if err := encoder.encodePoint(mt.outOfOrderPoints[oi]); err != nil {
-				s.logger.Printf("failed to encode a data point that metric is %q: %v\n", mt.name, err)
-				return false
-			}
-			oi++
-		}
-		for pi < len(mt.points) {
-			if err := encoder.encodePoint(mt.points[pi]); err != nil {
-				s.logger.Printf("failed to encode a data point that metric is %q: %v\n", mt.name, err)
-				return false
-			}
-			pi++
-		}
-		totalNumPoints := mt.size + int64(len(mt.outOfOrderPoints))
-		// for _, p := range mt.points {
-		// 	if err := encoder.encodePoint(p); err != nil {
-		// 		s.logger.Printf("failed to encode a data point that metric is %q: %v\n", mt.name, err)
-		// 		return false
-		// 	}
-		// }
+
 		if err := encoder.flush(); err != nil {
 			s.logger.Printf("failed to flush data points that metric is %q: %v", mt.name, err)
 			return false
 		}
+
+		totalNumPoints := mt.size + int64(len(mt.outOfOrderPoints))
 		metrics[mt.name] = diskMetric{
 			Name:          mt.name,
 			Offset:        offset,
