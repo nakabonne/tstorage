@@ -469,7 +469,8 @@ func ExampleStorage_Select_from_disk() {
 	//Timestamp: 1600000049, Value: 0.2
 }
 
-func ExampleStorage_InsertRows_out_of_order() {
+// Out of order data points not yet flushed are buffered but do not appear in select.
+func ExampleStorage_Select_out_of_order() {
 	storage, err := tstorage.NewStorage(
 		tstorage.WithTimestampPrecision(tstorage.Seconds),
 	)
@@ -499,11 +500,11 @@ func ExampleStorage_InsertRows_out_of_order() {
 	}
 	// Output:
 	// timestamp: 1600000000, value: 0.1
-	// timestamp: 1600000001, value: 0.1
 	// timestamp: 1600000002, value: 0.1
 	// timestamp: 1600000003, value: 0.1
 }
 
+// Out of order data points that are flushed should appear in select.
 func ExampleStorage_Select_from_disk_out_of_order() {
 	tmpDir, err := ioutil.TempDir("", "tstorage-example")
 	if err != nil {
