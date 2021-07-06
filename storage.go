@@ -299,7 +299,7 @@ func (s *storage) Select(metric string, labels []Label, start, end int64) ([]*Da
 		return nil, fmt.Errorf("metric must be set")
 	}
 	if start >= end {
-		return nil, fmt.Errorf("thg given start is greater than end")
+		return nil, fmt.Errorf("the given start is greater than end")
 	}
 	points := make([]*DataPoint, 0)
 
