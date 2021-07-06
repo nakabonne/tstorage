@@ -62,6 +62,39 @@ func ExampleStorage_InsertRows() {
 	// timestamp: 1600000000, value: 0.1
 }
 
+func ExampleStorage_InsertRows_out_of_order() {
+	storage, err := tstorage.NewStorage(
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := storage.Close(); err != nil {
+			panic(err)
+		}
+	}()
+	err = storage.InsertRows([]tstorage.Row{
+		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000000, Value: 0.1}},
+		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000002, Value: 0.1}},
+		{Metric: "metric1", DataPoint: tstorage.DataPoint{Timestamp: 1600000001, Value: 0.1}},
+	})
+	if err != nil {
+		panic(err)
+	}
+	points, err := storage.Select("metric1", nil, 1600000000, 1600000002)
+	if err != nil {
+		panic(err)
+	}
+	for _, p := range points {
+		fmt.Printf("timestamp: %v, value: %v\n", p.Timestamp, p.Value)
+	}
+	// Output:
+	// timestamp: 1600000000, value: 0.1
+	// timestamp: 1600000001, value: 0.1
+	// timestamp: 1600000002, value: 0.1
+}
+
 // simulates writing and reading in concurrent.
 func ExampleStorage_InsertRows_Select_concurrent() {
 	storage, err := tstorage.NewStorage(
