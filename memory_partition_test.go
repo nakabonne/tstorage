@@ -162,7 +162,7 @@ func Test_memoryMetric_EncodeAllPoints_sorted(t *testing.T) {
 	assert.Equal(t, []int64{1, 2, 3, 4}, allTimestamps)
 }
 
-func Test_memoryMetric_IterateAllPoints_error(t *testing.T) {
+func Test_memoryMetric_EncodeAllPoints_error(t *testing.T) {
 	mt := memoryMetric{
 		points: []*DataPoint{{Timestamp: 1, Value: 0.1}},
 	}
