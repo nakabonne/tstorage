@@ -139,7 +139,7 @@ func Test_memoryPartition_SelectDataPoints(t *testing.T) {
 	}
 }
 
-func Test_memoryMetric_IterateAllPoints_sorted(t *testing.T) {
+func Test_memoryMetric_EncodeAllPoints_sorted(t *testing.T) {
 	mt := memoryMetric{
 		points: []*DataPoint{
 			{Timestamp: 1, Value: 0.1},
@@ -150,10 +150,13 @@ func Test_memoryMetric_IterateAllPoints_sorted(t *testing.T) {
 		},
 	}
 	allTimestamps := make([]int64, 0, 3)
-	err := mt.iterateAllPoints(func(p *DataPoint) error {
-		allTimestamps = append(allTimestamps, p.Timestamp)
-		return nil
-	})
+	encoder := fakeEncoder{
+		encodePointFunc: func(p *DataPoint) error {
+			allTimestamps = append(allTimestamps, p.Timestamp)
+			return nil
+		},
+	}
+	err := mt.encodeAllPoints(&encoder)
 	require.NoError(t, err)
 	assert.Equal(t, []int64{1, 2, 3}, allTimestamps)
 }
@@ -162,9 +165,12 @@ func Test_memoryMetric_IterateAllPoints_error(t *testing.T) {
 	mt := memoryMetric{
 		points: []*DataPoint{{Timestamp: 1, Value: 0.1}},
 	}
-	err := mt.iterateAllPoints(func(p *DataPoint) error {
-		return fmt.Errorf("some error")
-	})
+	encoder := fakeEncoder{
+		encodePointFunc: func(p *DataPoint) error {
+			return fmt.Errorf("some error")
+		},
+	}
+	err := mt.encodeAllPoints(&encoder)
 	assert.Error(t, err)
 }
 
