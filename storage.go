@@ -435,8 +435,7 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 			return false
 		}
 
-		err = mt.iterateAllPoints(encoder.encodePoint)
-		if err != nil {
+		if err := mt.iterateAllPoints(encoder.encodePoint); err != nil {
 			s.logger.Printf("failed to encode a data point that metric is %q: %v\n", mt.name, err)
 			return false
 		}

@@ -471,7 +471,7 @@ func ExampleStorage_Select_from_disk() {
 
 // Out of order data points that are not yet flushed are in the buffer
 // but do not appear in select.
-func ExampleStorage_Select_out_of_order() {
+func ExampleStorage_Select_from_memory_out_of_order() {
 	storage, err := tstorage.NewStorage(
 		tstorage.WithTimestampPrecision(tstorage.Seconds),
 	)
@@ -497,12 +497,15 @@ func ExampleStorage_Select_out_of_order() {
 		panic(err)
 	}
 	for _, p := range points {
-		fmt.Printf("timestamp: %v, value: %v\n", p.Timestamp, p.Value)
+		fmt.Printf("Timestamp: %v, Value: %v\n", p.Timestamp, p.Value)
 	}
+
+	// Out-of-order data points are ignored because they will get merged when flushing.
+
 	// Output:
-	// timestamp: 1600000000, value: 0.1
-	// timestamp: 1600000002, value: 0.1
-	// timestamp: 1600000003, value: 0.1
+	// Timestamp: 1600000000, Value: 0.1
+	// Timestamp: 1600000002, Value: 0.1
+	// Timestamp: 1600000003, Value: 0.1
 }
 
 // Out of order data points that are flushed should appear in select.
