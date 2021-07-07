@@ -146,10 +146,11 @@ func Test_memoryMetric_EncodeAllPoints_sorted(t *testing.T) {
 			{Timestamp: 3, Value: 0.1},
 		},
 		outOfOrderPoints: []*DataPoint{
+			{Timestamp: 4, Value: 0.1},
 			{Timestamp: 2, Value: 0.1},
 		},
 	}
-	allTimestamps := make([]int64, 0, 3)
+	allTimestamps := make([]int64, 0, 4)
 	encoder := fakeEncoder{
 		encodePointFunc: func(p *DataPoint) error {
 			allTimestamps = append(allTimestamps, p.Timestamp)
@@ -158,7 +159,7 @@ func Test_memoryMetric_EncodeAllPoints_sorted(t *testing.T) {
 	}
 	err := mt.encodeAllPoints(&encoder)
 	require.NoError(t, err)
-	assert.Equal(t, []int64{1, 2, 3}, allTimestamps)
+	assert.Equal(t, []int64{1, 2, 3, 4}, allTimestamps)
 }
 
 func Test_memoryMetric_IterateAllPoints_error(t *testing.T) {
