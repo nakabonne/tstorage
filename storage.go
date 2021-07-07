@@ -299,7 +299,7 @@ func (s *storage) Select(metric string, labels []Label, start, end int64) ([]*Da
 		return nil, fmt.Errorf("metric must be set")
 	}
 	if start >= end {
-		return nil, fmt.Errorf("thg given start is greater than end")
+		return nil, fmt.Errorf("the given start is greater than end")
 	}
 	points := make([]*DataPoint, 0)
 
@@ -434,23 +434,24 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 			s.logger.Printf("failed to set file offset of metric %q: %v\n", mt.name, err)
 			return false
 		}
-		// TODO: Merge out-of-order data points
-		for _, p := range mt.points {
-			if err := encoder.encodePoint(p); err != nil {
-				s.logger.Printf("failed to encode a data point that metric is %q: %v\n", mt.name, err)
-				return false
-			}
+
+		if err := mt.encodeAllPoints(encoder); err != nil {
+			s.logger.Printf("failed to encode a data point that metric is %q: %v\n", mt.name, err)
+			return false
 		}
+
 		if err := encoder.flush(); err != nil {
 			s.logger.Printf("failed to flush data points that metric is %q: %v", mt.name, err)
 			return false
 		}
+
+		totalNumPoints := mt.size + int64(len(mt.outOfOrderPoints))
 		metrics[mt.name] = diskMetric{
 			Name:          mt.name,
 			Offset:        offset,
 			MinTimestamp:  mt.minTimestamp,
 			MaxTimestamp:  mt.maxTimestamp,
-			NumDataPoints: mt.size,
+			NumDataPoints: totalNumPoints,
 		}
 		return true
 	})
