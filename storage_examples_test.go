@@ -572,6 +572,88 @@ func ExampleStorage_Select_from_disk_out_of_order() {
 	// timestamp: 1600000003, value: 0.1
 }
 
+// Simulates inserting an outdated row that forces inserting into a non-head partition.
+func ExampleStorage_InsertRows_outdated() {
+	tmpDir, err := ioutil.TempDir("", "tstorage-example")
+	if err != nil {
+		panic(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	storage, err := tstorage.NewStorage(
+		tstorage.WithDataPath(tmpDir),
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
+		tstorage.WithPartitionDuration(3*time.Second),
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := storage.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	// Force two partitions with timestamps: (min: 1, max: 3), (min: 4, max: 5)
+	err = storage.InsertRows([]tstorage.Row{
+		{DataPoint: tstorage.DataPoint{Timestamp: 1600000001, Value: 0.1}, Metric: "metric1"},
+		{DataPoint: tstorage.DataPoint{Timestamp: 1600000003, Value: 0.1}, Metric: "metric1"},
+	})
+	if err != nil {
+		panic(err)
+	}
+	err = storage.InsertRows([]tstorage.Row{
+		{DataPoint: tstorage.DataPoint{Timestamp: 1600000004, Value: 0.1}, Metric: "metric1"},
+		{DataPoint: tstorage.DataPoint{Timestamp: 1600000005, Value: 0.1}, Metric: "metric1"},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Insert a data point that doesn't belong to the head partition. This will be inserted
+	// into the next partition out of order.
+	err = storage.InsertRows([]tstorage.Row{
+		{DataPoint: tstorage.DataPoint{Timestamp: 1600000002, Value: 0.1}, Metric: "metric1"},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Flush all data points
+	if err := storage.Close(); err != nil {
+		panic(err)
+	}
+
+	// Re-open storage from the persisted data
+	storage, err = tstorage.NewStorage(
+		tstorage.WithDataPath(tmpDir),
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
+		tstorage.WithPartitionDuration(3*time.Second),
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := storage.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	points, err := storage.Select("metric1", nil, 1600000001, 1600000006)
+	if err != nil {
+		panic(err)
+	}
+	for _, p := range points {
+		fmt.Printf("Timestamp: %v, Value: %v\n", p.Timestamp, p.Value)
+	}
+	// Output:
+	// Timestamp: 1600000001, Value: 0.1
+	// Timestamp: 1600000002, Value: 0.1
+	// Timestamp: 1600000003, Value: 0.1
+	// Timestamp: 1600000004, Value: 0.1
+	// Timestamp: 1600000005, Value: 0.1
+}
+
 func ExampleStorage_InsertRows_concurrent() {
 	storage, err := tstorage.NewStorage(
 		tstorage.WithTimestampPrecision(tstorage.Seconds),
