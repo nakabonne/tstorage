@@ -243,22 +243,24 @@ func (s *storage) InsertRows(rows []Row) error {
 
 	insert := func() error {
 		defer func() { <-s.workersLimitCh }()
-		p := s.getPartition()
-		outdatedRows, err := p.insertRows(rows)
-		if err != nil {
-			return fmt.Errorf("failed to insert rows: %w", err)
-		}
-		if len(outdatedRows) == 0 {
-			return nil
-		}
-		// Try to insert outdated rows to head's next partition. Any rows more than
-		// one partition out of date are dropped.
 		iterator := s.partitionList.newIterator()
-		if !iterator.next() {
-			return nil
+		rowsToInsert := rows
+		// Starting at the head partition, try to insert rows, and loop to insert outdated rows
+		// into older partitions. Any rows more than `defaultWritablePartitionsNum` partitions out
+		// of date are dropped.
+		for i := 0; i < defaultWritablePartitionsNum; i++ {
+			if !iterator.next() {
+				return nil
+			}
+			rowsToInsert, err := iterator.value().insertRows(rowsToInsert)
+			if err != nil {
+				return fmt.Errorf("failed to insert rows: %w", err)
+			}
+			if len(rowsToInsert) == 0 {
+				return nil
+			}
 		}
-		_, err = iterator.value().insertRows(outdatedRows)
-		return err
+		return nil
 	}
 
 	// Limit the number of concurrent goroutines to prevent from out of memory
