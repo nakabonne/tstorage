@@ -250,16 +250,17 @@ func (s *storage) InsertRows(rows []Row) error {
 		// into older partitions. Any rows more than `defaultWritablePartitionsNum` partitions out
 		// of date are dropped.
 		for i := 0; i < defaultWritablePartitionsNum; i++ {
-			if !iterator.next() {
-				return nil
-			}
-			rowsToInsert, err := iterator.value().insertRows(rowsToInsert)
-			if err != nil {
-				return fmt.Errorf("failed to insert rows: %w", err)
-			}
 			if len(rowsToInsert) == 0 {
 				return nil
 			}
+			if !iterator.next() {
+				return nil
+			}
+			outdatedRows, err := iterator.value().insertRows(rowsToInsert)
+			if err != nil {
+				return fmt.Errorf("failed to insert rows: %w", err)
+			}
+			rowsToInsert = outdatedRows
 		}
 		return nil
 	}
