@@ -248,9 +248,17 @@ func (s *storage) InsertRows(rows []Row) error {
 		if err != nil {
 			return fmt.Errorf("failed to insert rows: %w", err)
 		}
-		// TODO: Try to insert outdated rows to head's next partition
-		_ = outdatedRows
-		return nil
+		if len(outdatedRows) == 0 {
+			return nil
+		}
+		// Try to insert outdated rows to head's next partition. Any rows more than
+		// one partition out of date are dropped.
+		iterator := s.partitionList.newIterator()
+		if !iterator.next() {
+			return nil
+		}
+		_, err = iterator.value().insertRows(outdatedRows)
+		return err
 	}
 
 	// Limit the number of concurrent goroutines to prevent from out of memory
