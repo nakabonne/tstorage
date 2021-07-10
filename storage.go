@@ -243,6 +243,7 @@ func (s *storage) InsertRows(rows []Row) error {
 
 	insert := func() error {
 		defer func() { <-s.workersLimitCh }()
+		s.ensureActiveHead()
 		iterator := s.partitionList.newIterator()
 		rowsToInsert := rows
 		// Starting at the head partition, try to insert rows, and loop to insert outdated rows
@@ -285,15 +286,15 @@ func (s *storage) InsertRows(rows []Row) error {
 	}
 }
 
-// getPartition returns a writable partition. If none, it creates a new one.
-func (s *storage) getPartition() partition {
+// ensureActiveHead ensures the partitionList contains a writable partition.
+// If none, it creates a new one.
+func (s *storage) ensureActiveHead() {
 	head := s.partitionList.getHead()
 	if head.active() {
-		return head
+		return
 	}
 
 	// All partitions seems to be inactive so add a new partition to the list.
-
 	p := newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision)
 	s.partitionList.insert(p)
 	go func() {
@@ -301,7 +302,6 @@ func (s *storage) getPartition() partition {
 			s.logger.Printf("failed to flush in-memory partitions: %v", err)
 		}
 	}()
-	return p
 }
 
 func (s *storage) Select(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {

@@ -654,6 +654,101 @@ func ExampleStorage_InsertRows_outdated() {
 	// Timestamp: 1600000005, Value: 0.1
 }
 
+// Simulates inserting a row that's outside of the writable time window.
+func ExampleStorage_InsertRows_expired() {
+	tmpDir, err := ioutil.TempDir("", "tstorage-example")
+	if err != nil {
+		panic(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	storage, err := tstorage.NewStorage(
+		tstorage.WithDataPath(tmpDir),
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
+		tstorage.WithPartitionDuration(3*time.Second),
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := storage.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	// Force three partitions with timestamps: (min: 1, max: 3), (min: 4, max: 6), (min: 7, max: 8).
+	// Inserting the third partition will force the first one to be flushed to disk and become unwritable.
+	err = storage.InsertRows([]tstorage.Row{
+		{DataPoint: tstorage.DataPoint{Timestamp: 1600000001, Value: 0.1}, Metric: "metric1"},
+		{DataPoint: tstorage.DataPoint{Timestamp: 1600000003, Value: 0.1}, Metric: "metric1"},
+	})
+	if err != nil {
+		panic(err)
+	}
+	err = storage.InsertRows([]tstorage.Row{
+		{DataPoint: tstorage.DataPoint{Timestamp: 1600000004, Value: 0.1}, Metric: "metric1"},
+		{DataPoint: tstorage.DataPoint{Timestamp: 1600000005, Value: 0.1}, Metric: "metric1"},
+		{DataPoint: tstorage.DataPoint{Timestamp: 1600000006, Value: 0.1}, Metric: "metric1"},
+	})
+	if err != nil {
+		panic(err)
+	}
+	err = storage.InsertRows([]tstorage.Row{
+		{DataPoint: tstorage.DataPoint{Timestamp: 1600000007, Value: 0.1}, Metric: "metric1"},
+		{DataPoint: tstorage.DataPoint{Timestamp: 1600000008, Value: 0.1}, Metric: "metric1"},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Try to insert a data point into an already flushed partition.
+	err = storage.InsertRows([]tstorage.Row{
+		{DataPoint: tstorage.DataPoint{Timestamp: 1600000002, Value: 0.1}, Metric: "metric1"},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Flush all data points
+	if err := storage.Close(); err != nil {
+		panic(err)
+	}
+
+	// Re-open storage from the persisted data
+	storage, err = tstorage.NewStorage(
+		tstorage.WithDataPath(tmpDir),
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
+		tstorage.WithPartitionDuration(3*time.Second),
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := storage.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	points, err := storage.Select("metric1", nil, 1600000001, 1600000009)
+	if err != nil {
+		panic(err)
+	}
+	for _, p := range points {
+		fmt.Printf("Timestamp: %v, Value: %v\n", p.Timestamp, p.Value)
+	}
+
+	// Missing data point at 1600000002 because it was dropped.
+
+	// Output:
+	// Timestamp: 1600000001, Value: 0.1
+	// Timestamp: 1600000003, Value: 0.1
+	// Timestamp: 1600000004, Value: 0.1
+	// Timestamp: 1600000005, Value: 0.1
+	// Timestamp: 1600000006, Value: 0.1
+	// Timestamp: 1600000007, Value: 0.1
+	// Timestamp: 1600000008, Value: 0.1
+}
+
 func ExampleStorage_InsertRows_concurrent() {
 	storage, err := tstorage.NewStorage(
 		tstorage.WithTimestampPrecision(tstorage.Seconds),
