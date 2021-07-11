@@ -197,6 +197,7 @@ Want to know more details on tstorage internal? If so see the blog post: [Write 
 ## Used by
 - [ali](https://github.com/nakabonne/ali) - A load testing tool capable of performing real-time analysis
 - [gosivy](https://github.com/nakabonne/gosivy) - Real-time visualization tool for Go process metrics
+- [tstorage-server](https://github.com/bartmika/tstorage-server) - Fast time-series data storage server accessible over gRPC
 
 ## Acknowledgements
 This package is implemented based on tons of existing ideas. What I especially got inspired by are:
