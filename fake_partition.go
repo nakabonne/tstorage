@@ -32,3 +32,7 @@ func (f *fakePartition) size() int {
 func (f *fakePartition) active() bool {
 	return f.IsActive
 }
+
+func (f *fakePartition) clean() error {
+	return nil
+}

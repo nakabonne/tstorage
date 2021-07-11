@@ -142,3 +142,8 @@ func (d *diskPartition) size() int {
 func (d *diskPartition) active() bool {
 	return false
 }
+
+func (d *diskPartition) clean() error {
+	// FIXME: Remove the directory this partition holds.
+	return nil
+}

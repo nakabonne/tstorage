@@ -155,6 +155,12 @@ func (m *memoryPartition) active() bool {
 	return m.maxTimestamp()-m.minTimestamp()+1 < m.partitionDuration
 }
 
+func (m *memoryPartition) clean() error {
+	// What all data managed by memoryPartition is on heap that is automatically removed by GC.
+	// So do nothing.
+	return nil
+}
+
 // memoryMetric has a list of ordered data points that belong to the memoryMetric
 type memoryMetric struct {
 	name         string

@@ -16,6 +16,8 @@ type partition interface {
 	// If data points older than its min timestamp were given, they won't be
 	// ingested, instead, gave back as a first returned value.
 	insertRows(rows []Row) (outdatedRows []Row, err error)
+	// clean removes everything managed by this partition.
+	clean() error
 
 	// Read operations
 	//
