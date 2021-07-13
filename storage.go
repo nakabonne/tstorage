@@ -251,10 +251,10 @@ func (s *storage) InsertRows(rows []Row) error {
 		// of date are dropped.
 		for i := 0; i < defaultWritablePartitionsNum; i++ {
 			if len(rowsToInsert) == 0 {
-				return nil
+				break
 			}
 			if !iterator.next() {
-				return nil
+				break
 			}
 			outdatedRows, err := iterator.value().insertRows(rowsToInsert)
 			if err != nil {

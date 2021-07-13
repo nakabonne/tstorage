@@ -588,11 +588,6 @@ func ExampleStorage_InsertRows_outdated() {
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		if err := storage.Close(); err != nil {
-			panic(err)
-		}
-	}()
 
 	// Force two partitions with timestamps: (min: 1, max: 3), (min: 4, max: 5)
 	err = storage.InsertRows([]tstorage.Row{
@@ -670,11 +665,6 @@ func ExampleStorage_InsertRows_expired() {
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		if err := storage.Close(); err != nil {
-			panic(err)
-		}
-	}()
 
 	// Force three partitions with timestamps: (min: 1, max: 3), (min: 4, max: 6), (min: 7, max: 8).
 	// Inserting the third partition will force the first one to be flushed to disk and become unwritable.
