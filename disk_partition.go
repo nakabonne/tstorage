@@ -108,7 +108,7 @@ func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, e
 		return nil, fmt.Errorf("failed to generate decoder for metric %q in %q: %w", name, d.dirPath, err)
 	}
 
-	// TODO: Use binary search to select points on disk
+	// TODO: Divide fixed-lengh chunks when flushing, and index it.
 	points := make([]*DataPoint, 0, mt.NumDataPoints)
 	for i := 0; i < int(mt.NumDataPoints); i++ {
 		point := &DataPoint{}
