@@ -113,6 +113,8 @@ func WithPartitionDuration(duration time.Duration) Option {
 }
 
 // WithRetention specifies when to remove old data.
+// Data points will get automatically removed from the disk after a
+// specified period of time after a disk partition was created.
 // Defaults to 14d.
 func WithRetention(retention time.Duration) Option {
 	return func(s *storage) {
