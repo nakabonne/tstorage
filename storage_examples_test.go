@@ -3,7 +3,6 @@ package tstorage_test
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"sync"
 	"time"
@@ -122,7 +121,7 @@ func ExampleStorage_InsertRows_Select_concurrent() {
 }
 
 func ExampleStorage_Select_from_memory() {
-	tmpDir, err := ioutil.TempDir("", "tstorage-example")
+	tmpDir, err := os.MkdirTemp("", "tstorage-example")
 	if err != nil {
 		panic(err)
 	}
@@ -291,7 +290,7 @@ func ExampleStorage_Select_from_memory() {
 
 // simulates writing and reading on disk.
 func ExampleStorage_Select_from_disk() {
-	tmpDir, err := ioutil.TempDir("", "tstorage-example")
+	tmpDir, err := os.MkdirTemp("", "tstorage-example")
 	if err != nil {
 		panic(err)
 	}
@@ -510,7 +509,7 @@ func ExampleStorage_Select_from_memory_out_of_order() {
 
 // Out of order data points that are flushed should appear in select.
 func ExampleStorage_Select_from_disk_out_of_order() {
-	tmpDir, err := ioutil.TempDir("", "tstorage-example")
+	tmpDir, err := os.MkdirTemp("", "tstorage-example")
 	if err != nil {
 		panic(err)
 	}
@@ -574,7 +573,7 @@ func ExampleStorage_Select_from_disk_out_of_order() {
 
 // Simulates inserting an outdated row that forces inserting into a non-head partition.
 func ExampleStorage_InsertRows_outdated() {
-	tmpDir, err := ioutil.TempDir("", "tstorage-example")
+	tmpDir, err := os.MkdirTemp("", "tstorage-example")
 	if err != nil {
 		panic(err)
 	}
@@ -651,7 +650,7 @@ func ExampleStorage_InsertRows_outdated() {
 
 // Simulates inserting a row that's outside of the writable time window.
 func ExampleStorage_InsertRows_expired() {
-	tmpDir, err := ioutil.TempDir("", "tstorage-example")
+	tmpDir, err := os.MkdirTemp("", "tstorage-example")
 	if err != nil {
 		panic(err)
 	}

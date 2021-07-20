@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -200,25 +199,25 @@ func NewStorage(opts ...Option) (Storage, error) {
 		return nil, err
 	}
 	s.wal = w
-	files, err := ioutil.ReadDir(s.dataPath)
+	entries, err := os.ReadDir(s.dataPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open data directory: %w", err)
 	}
-	if len(files) == 0 {
+	if len(entries) == 0 {
 		s.partitionList.insert(newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision))
 		return s, nil
 	}
 
 	// Read existent partitions from the disk.
-	isPartitionDir := func(f fs.FileInfo) bool {
+	isPartitionDir := func(f fs.DirEntry) bool {
 		return f.IsDir() && partitionDirRegex.MatchString(f.Name())
 	}
-	partitions := make([]partition, 0, len(files))
-	for _, f := range files {
-		if !isPartitionDir(f) {
+	partitions := make([]partition, 0, len(entries))
+	for _, e := range entries {
+		if !isPartitionDir(e) {
 			continue
 		}
-		path := filepath.Join(s.dataPath, f.Name())
+		path := filepath.Join(s.dataPath, e.Name())
 		part, err := openDiskPartition(path, s.retention)
 		if errors.Is(err, ErrNoDataPoints) {
 			continue
