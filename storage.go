@@ -396,7 +396,10 @@ func (s *storage) Close() error {
 	if err := s.flushPartitions(); err != nil {
 		return fmt.Errorf("failed to close storage: %w", err)
 	}
-	s.removeExpiredPartitions()
+	err := s.removeExpiredPartitions()
+	if err != nil {
+		return fmt.Errorf("failed to remove expired partitions: %w")
+	}
 	return nil
 }
 
