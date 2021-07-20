@@ -92,42 +92,24 @@ func Test_memoryPartition_SelectDataPoints(t *testing.T) {
 				m := newMemoryPartition(nil, 0, "").(*memoryPartition)
 				m.insertRows([]Row{
 					{
-						Metric: "metric1",
-						DataPoint: DataPoint{
-							Timestamp: 1,
-							Value:     0.1,
-						},
+						Metric:    "metric1",
+						DataPoint: DataPoint{Timestamp: 1, Value: 0.1},
 					},
 					{
-						Metric: "metric1",
-						DataPoint: DataPoint{
-							Timestamp: 2,
-							Value:     0.1,
-						},
+						Metric:    "metric1",
+						DataPoint: DataPoint{Timestamp: 2, Value: 0.1},
 					},
 					{
-						Metric: "metric1",
-						DataPoint: DataPoint{
-							Timestamp: 3,
-							Value:     0.1,
-						},
+						Metric:    "metric1",
+						DataPoint: DataPoint{Timestamp: 3, Value: 0.1},
 					},
 				})
 				return m
 			}(),
 			want: []*DataPoint{
-				{
-					Timestamp: 1,
-					Value:     0.1,
-				},
-				{
-					Timestamp: 2,
-					Value:     0.1,
-				},
-				{
-					Timestamp: 3,
-					Value:     0.1,
-				},
+				{Timestamp: 1, Value: 0.1},
+				{Timestamp: 2, Value: 0.1},
+				{Timestamp: 3, Value: 0.1},
 			},
 		},
 	}

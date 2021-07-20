@@ -19,16 +19,10 @@ func Test_gorillaEncoder_encodePoint_decodePoint(t *testing.T) {
 		{
 			name: "one data point",
 			input: []*DataPoint{
-				{
-					Timestamp: 1600000000,
-					Value:     0.1,
-				},
+				{Timestamp: 1600000000, Value: 0.1},
 			},
 			want: []*DataPoint{
-				{
-					Timestamp: 1600000000,
-					Value:     0.1,
-				},
+				{Timestamp: 1600000000, Value: 0.1},
 			},
 			wantEncodedByteSize: 14,
 			wantErr:             false,
@@ -36,40 +30,16 @@ func Test_gorillaEncoder_encodePoint_decodePoint(t *testing.T) {
 		{
 			name: "data points at regular intervals",
 			input: []*DataPoint{
-				{
-					Timestamp: 1600000000,
-					Value:     0.1,
-				},
-				{
-					Timestamp: 1600000060,
-					Value:     0.1,
-				},
-				{
-					Timestamp: 1600000120,
-					Value:     0.1,
-				},
-				{
-					Timestamp: 1600000180,
-					Value:     0.1,
-				},
+				{Timestamp: 1600000000, Value: 0.1},
+				{Timestamp: 1600000060, Value: 0.1},
+				{Timestamp: 1600000120, Value: 0.1},
+				{Timestamp: 1600000180, Value: 0.1},
 			},
 			want: []*DataPoint{
-				{
-					Timestamp: 1600000000,
-					Value:     0.1,
-				},
-				{
-					Timestamp: 1600000060,
-					Value:     0.1,
-				},
-				{
-					Timestamp: 1600000120,
-					Value:     0.1,
-				},
-				{
-					Timestamp: 1600000180,
-					Value:     0.1,
-				},
+				{Timestamp: 1600000000, Value: 0.1},
+				{Timestamp: 1600000060, Value: 0.1},
+				{Timestamp: 1600000120, Value: 0.1},
+				{Timestamp: 1600000180, Value: 0.1},
 			},
 			wantEncodedByteSize: 15,
 			wantErr:             false,
@@ -77,48 +47,18 @@ func Test_gorillaEncoder_encodePoint_decodePoint(t *testing.T) {
 		{
 			name: "data points at random intervals",
 			input: []*DataPoint{
-				{
-					Timestamp: 1600000000,
-					Value:     0.1,
-				},
-				{
-					Timestamp: 1600000060,
-					Value:     1.1,
-				},
-				{
-					Timestamp: 1600000182,
-					Value:     15.01,
-				},
-				{
-					Timestamp: 1600000400,
-					Value:     0.01,
-				},
-				{
-					Timestamp: 1600002000,
-					Value:     10.8,
-				},
+				{Timestamp: 1600000000, Value: 0.1},
+				{Timestamp: 1600000060, Value: 1.1},
+				{Timestamp: 1600000182, Value: 15.01},
+				{Timestamp: 1600000400, Value: 0.01},
+				{Timestamp: 1600002000, Value: 10.8},
 			},
 			want: []*DataPoint{
-				{
-					Timestamp: 1600000000,
-					Value:     0.1,
-				},
-				{
-					Timestamp: 1600000060,
-					Value:     1.1,
-				},
-				{
-					Timestamp: 1600000182,
-					Value:     15.01,
-				},
-				{
-					Timestamp: 1600000400,
-					Value:     0.01,
-				},
-				{
-					Timestamp: 1600002000,
-					Value:     10.8,
-				},
+				{Timestamp: 1600000000, Value: 0.1},
+				{Timestamp: 1600000060, Value: 1.1},
+				{Timestamp: 1600000182, Value: 15.01},
+				{Timestamp: 1600000400, Value: 0.01},
+				{Timestamp: 1600002000, Value: 10.8},
 			},
 			wantEncodedByteSize: 52,
 			wantErr:             false,
