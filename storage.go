@@ -38,10 +38,13 @@ const (
 	Milliseconds TimestampPrecision = "ms"
 	Seconds      TimestampPrecision = "s"
 
-	defaultPartitionDuration     = 1 * time.Hour
-	defaultTimestampPrecision    = Nanoseconds
-	defaultWriteTimeout          = 30 * time.Second
-	defaultWritablePartitionsNum = 2
+	defaultPartitionDuration  = 1 * time.Hour
+	defaultRetention          = 336 * time.Hour
+	defaultTimestampPrecision = Nanoseconds
+	defaultWriteTimeout       = 30 * time.Second
+
+	writablePartitionsNum = 2
+	checkExpiredInterval  = time.Hour
 )
 
 // Storage provides goroutine safe capabilities of insertion into and retrieval from the time-series storage.
@@ -109,6 +112,14 @@ func WithPartitionDuration(duration time.Duration) Option {
 	}
 }
 
+// WithRetention specifies when to remove old data.
+// Defaults to 14d.
+func WithRetention(retention time.Duration) Option {
+	return func(s *storage) {
+		s.retention = retention
+	}
+}
+
 // WithTimestampPrecision specifies the precision of timestamps to be used by all operations.
 //
 // Defaults to Nanoseconds
@@ -148,12 +159,16 @@ func NewStorage(opts ...Option) (Storage, error) {
 		partitionList:  newPartitionList(),
 		workersLimitCh: make(chan struct{}, defaultWorkersLimit),
 		wal:            &nopWAL{},
+		doneCh:         make(chan struct{}, 0),
 	}
 	for _, opt := range opts {
 		opt(s)
 	}
 	if s.partitionDuration <= 0 {
 		s.partitionDuration = defaultPartitionDuration
+	}
+	if s.retention <= 0 {
+		s.retention = defaultRetention
 	}
 	if s.timestampPrecision == "" {
 		s.timestampPrecision = defaultTimestampPrecision
@@ -202,7 +217,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 			continue
 		}
 		path := filepath.Join(s.dataPath, f.Name())
-		part, err := openDiskPartition(path)
+		part, err := openDiskPartition(path, s.retention)
 		if errors.Is(err, ErrNoDataPoints) {
 			continue
 		}
@@ -219,6 +234,22 @@ func NewStorage(opts ...Option) (Storage, error) {
 	}
 	s.partitionList.insert(newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision))
 
+	// periodically check and permanently remove expired partitions.
+	go func() {
+		ticker := time.NewTicker(checkExpiredInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-s.doneCh:
+				return
+			case <-ticker.C:
+				err := s.removeExpiredPartitions()
+				if err != nil {
+					s.logger.Printf("%v\n", err)
+				}
+			}
+		}
+	}()
 	return s, nil
 }
 
@@ -227,6 +258,7 @@ type storage struct {
 
 	wal                wal
 	partitionDuration  time.Duration
+	retention          time.Duration
 	timestampPrecision TimestampPrecision
 	dataPath           string
 	writeTimeout       time.Duration
@@ -235,6 +267,8 @@ type storage struct {
 	workersLimitCh chan struct{}
 	// wg must be incremented to guarantee all writes are done gracefully.
 	wg sync.WaitGroup
+
+	doneCh chan struct{}
 }
 
 func (s *storage) InsertRows(rows []Row) error {
@@ -247,9 +281,9 @@ func (s *storage) InsertRows(rows []Row) error {
 		iterator := s.partitionList.newIterator()
 		rowsToInsert := rows
 		// Starting at the head partition, try to insert rows, and loop to insert outdated rows
-		// into older partitions. Any rows more than `defaultWritablePartitionsNum` partitions out
+		// into older partitions. Any rows more than `writablePartitionsNum` partitions out
 		// of date are dropped.
-		for i := 0; i < defaultWritablePartitionsNum; i++ {
+		for i := 0; i < writablePartitionsNum; i++ {
 			if len(rowsToInsert) == 0 {
 				break
 			}
@@ -350,17 +384,19 @@ func (s *storage) Select(metric string, labels []Label, start, end int64) ([]*Da
 
 func (s *storage) Close() error {
 	s.wg.Wait()
+	close(s.doneCh)
 
 	// TODO: Prevent from new goroutines calling InsertRows(), for graceful shutdown.
 
 	// Make all writable partitions read-only by inserting as same number of those.
-	for i := 0; i < defaultWritablePartitionsNum; i++ {
+	for i := 0; i < writablePartitionsNum; i++ {
 		p := newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision)
 		s.partitionList.insert(p)
 	}
 	if err := s.flushPartitions(); err != nil {
 		return fmt.Errorf("failed to close storage: %w", err)
 	}
+	s.removeExpiredPartitions()
 	return nil
 }
 
@@ -372,7 +408,7 @@ func (s *storage) flushPartitions() error {
 	i := 0
 	iterator := s.partitionList.newIterator()
 	for iterator.next() {
-		if i < defaultWritablePartitionsNum {
+		if i < writablePartitionsNum {
 			i++
 			continue
 		}
@@ -399,7 +435,7 @@ func (s *storage) flushPartitions() error {
 		if err := s.flush(dir, memPart); err != nil {
 			return fmt.Errorf("failed to compact memory partition into %s: %w", dir, err)
 		}
-		newPart, err := openDiskPartition(dir)
+		newPart, err := openDiskPartition(dir, s.retention)
 		if errors.Is(err, ErrNoDataPoints) {
 			if err := s.partitionList.remove(part); err != nil {
 				return fmt.Errorf("failed to remove partition: %w", err)
@@ -452,7 +488,7 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 		}
 
 		if err := encoder.flush(); err != nil {
-			s.logger.Printf("failed to flush data points that metric is %q: %v", mt.name, err)
+			s.logger.Printf("failed to flush data points that metric is %q: %v\n", mt.name, err)
 			return false
 		}
 
@@ -472,6 +508,7 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 		MaxTimestamp:  m.maxTimestamp(),
 		NumDataPoints: m.size(),
 		Metrics:       metrics,
+		CreatedAt:     time.Now(),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to encode metadata: %w", err)
@@ -479,6 +516,27 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 	metaPath := filepath.Join(dirPath, metaFileName)
 	if err := os.WriteFile(metaPath, b, fs.ModePerm); err != nil {
 		return fmt.Errorf("failed to write metadata to %s: %w", metaPath, err)
+	}
+	return nil
+}
+
+func (s *storage) removeExpiredPartitions() error {
+	expiredList := make([]partition, 0)
+	iterator := s.partitionList.newIterator()
+	for iterator.next() {
+		part := iterator.value()
+		if part == nil {
+			return fmt.Errorf("unexpected nil partition found")
+		}
+		if part.expired() {
+			expiredList = append(expiredList, part)
+		}
+	}
+
+	for i := range expiredList {
+		if err := s.partitionList.remove(expiredList[i]); err != nil {
+			return fmt.Errorf("failed to remove expired partition")
+		}
 	}
 	return nil
 }

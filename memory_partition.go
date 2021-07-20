@@ -161,6 +161,10 @@ func (m *memoryPartition) clean() error {
 	return nil
 }
 
+func (m *memoryPartition) expired() bool {
+	return false
+}
+
 // memoryMetric has a list of ordered data points that belong to the memoryMetric
 type memoryMetric struct {
 	name         string

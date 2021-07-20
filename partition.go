@@ -31,4 +31,6 @@ type partition interface {
 	size() int
 	// active means not only writable but having the qualities to be the head partition.
 	active() bool
+	// expired means it should get removed.
+	expired() bool
 }

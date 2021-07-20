@@ -98,9 +98,6 @@ func (p *partitionListImpl) remove(target partition) error {
 		}
 
 		// remove the current node.
-		if err := current.value().clean(); err != nil {
-			return fmt.Errorf("failed to clean resources managed by partition to be removed: %w", err)
-		}
 
 		iterator.next()
 		next = iterator.currentNode()
@@ -117,6 +114,10 @@ func (p *partitionListImpl) remove(target partition) error {
 			prev.setNext(next)
 		}
 		atomic.AddInt64(&p.numPartitions, -1)
+
+		if err := current.value().clean(); err != nil {
+			return fmt.Errorf("failed to clean resources managed by partition to be removed: %w", err)
+		}
 		return nil
 	}
 
