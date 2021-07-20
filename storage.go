@@ -398,7 +398,7 @@ func (s *storage) Close() error {
 	}
 	err := s.removeExpiredPartitions()
 	if err != nil {
-		return fmt.Errorf("failed to remove expired partitions: %w")
+		return fmt.Errorf("failed to remove expired partitions: %w", err)
 	}
 	return nil
 }
