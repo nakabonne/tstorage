@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/nakabonne/tstorage/internal/syscall"
 )
@@ -26,14 +27,18 @@ type diskPartition struct {
 	f *os.File
 	// memory-mapped file backed by f
 	mappedFile []byte
+	// duration to store data
+	retention time.Duration
 }
 
 // meta is a mapper for a meta file, which is put for each partition.
+// Note that the CreatedAt is surely timestamped by tstorage but Min/Max Timestamps are likely to do by other process.
 type meta struct {
 	MinTimestamp  int64                 `json:"minTimestamp"`
 	MaxTimestamp  int64                 `json:"maxTimestamp"`
 	NumDataPoints int                   `json:"numDataPoints"`
 	Metrics       map[string]diskMetric `json:"metrics"`
+	CreatedAt     time.Time             `json:"createdAt"`
 }
 
 // diskMetric holds meta data to access actual data from the memory-mapped file.
@@ -46,7 +51,7 @@ type diskMetric struct {
 }
 
 // openDiskPartition first maps the data file into memory with memory-mapping.
-func openDiskPartition(dirPath string) (partition, error) {
+func openDiskPartition(dirPath string, retention time.Duration) (partition, error) {
 	if dirPath == "" {
 		return nil, fmt.Errorf("dir path is required")
 	}
@@ -86,6 +91,7 @@ func openDiskPartition(dirPath string) (partition, error) {
 		meta:       m,
 		f:          f,
 		mappedFile: mapped,
+		retention:  retention,
 	}, nil
 }
 
@@ -94,6 +100,9 @@ func (d *diskPartition) insertRows(_ []Row) ([]Row, error) {
 }
 
 func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
+	if d.expired() {
+		return nil, fmt.Errorf("this partition is expired")
+	}
 	name := marshalMetricName(metric, labels)
 	mt, ok := d.meta.Metrics[name]
 	if !ok {
@@ -144,6 +153,17 @@ func (d *diskPartition) active() bool {
 }
 
 func (d *diskPartition) clean() error {
-	// FIXME: Remove the directory this partition holds.
+	if err := os.RemoveAll(d.dirPath); err != nil {
+		return fmt.Errorf("failed to remove all files inside the partition (%d~%d): %w", d.minTimestamp(), d.maxTimestamp(), err)
+	}
+
 	return nil
+}
+
+func (d *diskPartition) expired() bool {
+	diff := time.Since(d.meta.CreatedAt)
+	if diff > d.retention {
+		return true
+	}
+	return false
 }

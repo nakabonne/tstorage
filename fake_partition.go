@@ -36,3 +36,7 @@ func (f *fakePartition) active() bool {
 func (f *fakePartition) clean() error {
 	return nil
 }
+
+func (f *fakePartition) expired() bool {
+	return false
+}
