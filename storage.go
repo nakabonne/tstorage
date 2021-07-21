@@ -280,11 +280,12 @@ func (s *storage) InsertRows(rows []Row) error {
 		defer func() { <-s.workersLimitCh }()
 		s.ensureActiveHead()
 		iterator := s.partitionList.newIterator()
+		n := s.partitionList.size()
 		rowsToInsert := rows
 		// Starting at the head partition, try to insert rows, and loop to insert outdated rows
 		// into older partitions. Any rows more than `writablePartitionsNum` partitions out
 		// of date are dropped.
-		for i := 0; i < writablePartitionsNum; i++ {
+		for i := 0; i < n && i < writablePartitionsNum; i++ {
 			if len(rowsToInsert) == 0 {
 				break
 			}
