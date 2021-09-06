@@ -84,7 +84,43 @@ func Test_memoryPartition_SelectDataPoints(t *testing.T) {
 			want:            []*DataPoint{},
 		},
 		{
-			name:   "select multiple points",
+			name:   "select some points",
+			metric: "metric1",
+			start:  2,
+			end:    4,
+			memoryPartition: func() *memoryPartition {
+				m := newMemoryPartition(nil, 0, "").(*memoryPartition)
+				m.insertRows([]Row{
+					{
+						Metric:    "metric1",
+						DataPoint: DataPoint{Timestamp: 1, Value: 0.1},
+					},
+					{
+						Metric:    "metric1",
+						DataPoint: DataPoint{Timestamp: 2, Value: 0.1},
+					},
+					{
+						Metric:    "metric1",
+						DataPoint: DataPoint{Timestamp: 3, Value: 0.1},
+					},
+					{
+						Metric:    "metric1",
+						DataPoint: DataPoint{Timestamp: 4, Value: 0.1},
+					},
+					{
+						Metric:    "metric1",
+						DataPoint: DataPoint{Timestamp: 5, Value: 0.1},
+					},
+				})
+				return m
+			}(),
+			want: []*DataPoint{
+				{Timestamp: 2, Value: 0.1},
+				{Timestamp: 3, Value: 0.1},
+			},
+		},
+		{
+			name:   "select all points",
 			metric: "metric1",
 			start:  1,
 			end:    4,

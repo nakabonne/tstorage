@@ -236,8 +236,8 @@ func (m *memoryMetric) selectPoints(start, end int64) []*DataPoint {
 	} else {
 		// Use binary search because points are in-order.
 		endIdx = sort.Search(int(size), func(i int) bool {
-			return m.points[i].Timestamp < end
-		}) + 1
+			return m.points[i].Timestamp >= end
+		})
 	}
 	return m.points[startIdx:endIdx]
 }
