@@ -41,6 +41,7 @@ const (
 	defaultRetention          = 336 * time.Hour
 	defaultTimestampPrecision = Nanoseconds
 	defaultWriteTimeout       = 30 * time.Second
+	defaultWALBufferedSize    = 4096
 
 	writablePartitionsNum = 2
 	checkExpiredInterval  = time.Hour
@@ -151,54 +152,63 @@ func WithLogger(logger Logger) Option {
 	}
 }
 
+// WithWAL specifies the buffered byte size before flushing a WAL file.
+// The larger the size, the less frequently the file is written and more write performance at the expense of durability.
+// Giving 0 means it writes to a file whenever data point comes in.
+// Giving -1 disables using WAL.
+//
+// Defaults to 4096.
+func WithWALBufferedSize(size int) Option {
+	return func(s *storage) {
+		s.walBufferedSize = size
+	}
+}
+
 // NewStorage gives back a new storage, which stores time-series data in the process memory by default.
 //
 // Give the WithDataPath option for running as a on-disk storage. Specify a directory with data already exists,
 // then it will be read as the initial data.
 func NewStorage(opts ...Option) (Storage, error) {
 	s := &storage{
-		partitionList:  newPartitionList(),
-		workersLimitCh: make(chan struct{}, defaultWorkersLimit),
-		wal:            &nopWAL{},
-		doneCh:         make(chan struct{}, 0),
+		partitionList:      newPartitionList(),
+		workersLimitCh:     make(chan struct{}, defaultWorkersLimit),
+		partitionDuration:  defaultPartitionDuration,
+		retention:          defaultRetention,
+		timestampPrecision: defaultTimestampPrecision,
+		writeTimeout:       defaultWriteTimeout,
+		walBufferedSize:    defaultWALBufferedSize,
+		wal:                &nopWAL{},
+		logger:             &nopLogger{},
+		doneCh:             make(chan struct{}, 0),
 	}
 	for _, opt := range opts {
 		opt(s)
 	}
-	if s.partitionDuration <= 0 {
-		s.partitionDuration = defaultPartitionDuration
-	}
-	if s.retention <= 0 {
-		s.retention = defaultRetention
-	}
-	if s.timestampPrecision == "" {
-		s.timestampPrecision = defaultTimestampPrecision
-	}
-	if s.writeTimeout <= 0 {
-		s.writeTimeout = defaultWriteTimeout
-	}
-	if s.logger == nil {
-		s.logger = &nopLogger{}
-	}
 
 	if s.inMemoryMode() {
-		s.partitionList.insert(newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision))
+		s.partitionList.insert(newMemoryPartition(nil, s.partitionDuration, s.timestampPrecision))
 		return s, nil
-	}
-
-	walPath := filepath.Join(s.dataPath, "wal")
-	if info, err := os.Stat(walPath); !os.IsNotExist(err) && !info.IsDir() {
-		// TODO: Start WAL recovery, which means to create a new memoryPartition based on WAL entries
 	}
 
 	if err := os.MkdirAll(s.dataPath, fs.ModePerm); err != nil {
 		return nil, fmt.Errorf("failed to make data directory %s: %w", s.dataPath, err)
 	}
-	w, err := newFileWal(walPath)
-	if err != nil {
-		return nil, err
+
+	// Start WAL recovery if there is.
+	walPath := filepath.Join(s.dataPath, "wal")
+	if err := s.recoverWAL(walPath); err != nil {
+		return nil, fmt.Errorf("failed to recover WAL: %w", err)
 	}
-	s.wal = w
+
+	// Set WAL
+	if s.walBufferedSize >= 0 {
+		wal, err := newFileWal(walPath, s.walBufferedSize)
+		if err != nil {
+			return nil, err
+		}
+		s.wal = wal
+	}
+
 	entries, err := os.ReadDir(s.dataPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open data directory: %w", err)
@@ -257,6 +267,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 type storage struct {
 	partitionList partitionList
 
+	walBufferedSize    int
 	wal                wal
 	partitionDuration  time.Duration
 	retention          time.Duration
@@ -323,7 +334,7 @@ func (s *storage) InsertRows(rows []Row) error {
 	}
 }
 
-// ensureActiveHead ensures the partitionList contains a writable partition.
+// ensureActiveHead ensures the partitionList contains an active partition.
 // If none, it creates a new one.
 func (s *storage) ensureActiveHead() {
 	head := s.partitionList.getHead()
@@ -339,6 +350,10 @@ func (s *storage) ensureActiveHead() {
 			s.logger.Printf("failed to flush in-memory partitions: %v", err)
 		}
 	}()
+
+	// FIXME: Think about when WAL file should be renewed.
+	//   Maybe it's better to make two WAL file for each memory partition?
+	//   Or, like Prometheus, it may be nice to have multiple segment files under the wal/ directory
 }
 
 func (s *storage) Select(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
@@ -387,6 +402,9 @@ func (s *storage) Select(metric string, labels []Label, start, end int64) ([]*Da
 func (s *storage) Close() error {
 	s.wg.Wait()
 	close(s.doneCh)
+	if err := s.wal.flush(); err != nil {
+		return fmt.Errorf("failed to flush buffered WAL: %w", err)
+	}
 
 	// TODO: Prevent from new goroutines calling InsertRows(), for graceful shutdown.
 
@@ -398,9 +416,12 @@ func (s *storage) Close() error {
 	if err := s.flushPartitions(); err != nil {
 		return fmt.Errorf("failed to close storage: %w", err)
 	}
-	err := s.removeExpiredPartitions()
-	if err != nil {
+	if err := s.removeExpiredPartitions(); err != nil {
 		return fmt.Errorf("failed to remove expired partitions: %w", err)
+	}
+	// All partitions have been flushed, so WAL isn't needed anymore.
+	if err := s.wal.truncate(writablePartitionsNum - 1); err != nil {
+		return fmt.Errorf("failed to truncate WAL: %w", err)
 	}
 	return nil
 }
@@ -544,6 +565,43 @@ func (s *storage) removeExpiredPartitions() error {
 		}
 	}
 	return nil
+}
+
+// recoverWAL inserts all records within the given wal, and then remove all WALs.
+func (s *storage) recoverWAL(walPath string) error {
+	reader, err := newFileWalReader(walPath)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	walRecords := make([]Row, 0)
+	for reader.next() {
+		rec := reader.record()
+		if rec.op == operationInsert {
+			walRecords = append(walRecords, rec.row)
+		}
+	}
+	if err := reader.close(); err != nil {
+		return err
+	}
+	if reader.error() != nil {
+		return fmt.Errorf("encounter an error while recovering WAL: %w", reader.error())
+	}
+
+	if len(walRecords) == 0 {
+		return nil
+	}
+
+	// Insert wal records into the head partition.
+	p := newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision)
+	if _, err := p.insertRows(walRecords); err != nil {
+		return err
+	}
+	s.partitionList.insert(p)
+	return os.RemoveAll(walPath)
 }
 
 func (s *storage) inMemoryMode() bool {
