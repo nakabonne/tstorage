@@ -21,7 +21,8 @@ const (
 type wal interface {
 	append(op walOperation, rows []Row) error
 	flush() error
-	truncate(index int) error
+	truncate(id int64) error
+	removeAll() error
 }
 
 type nopWAL struct {
@@ -34,10 +35,14 @@ func (f *nopWAL) append(_ walOperation, _ []Row) error {
 	return nil
 }
 
-func (f *nopWAL) truncate(_ int) error {
+func (f *nopWAL) flush() error {
 	return nil
 }
 
-func (f *nopWAL) flush() error {
+func (f *nopWAL) truncate(_ int64) error {
+	return nil
+}
+
+func (f *nopWAL) removeAll() error {
 	return nil
 }

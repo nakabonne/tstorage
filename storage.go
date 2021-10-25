@@ -351,9 +351,6 @@ func (s *storage) ensureActiveHead() {
 		}
 	}()
 
-	// FIXME: Think about when WAL file should be renewed.
-	//   Maybe it's better to make two WAL file for each memory partition?
-	//   Or, like Prometheus, it may be nice to have multiple segment files under the wal/ directory
 }
 
 func (s *storage) Select(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
@@ -420,8 +417,8 @@ func (s *storage) Close() error {
 		return fmt.Errorf("failed to remove expired partitions: %w", err)
 	}
 	// All partitions have been flushed, so WAL isn't needed anymore.
-	if err := s.wal.truncate(writablePartitionsNum - 1); err != nil {
-		return fmt.Errorf("failed to truncate WAL: %w", err)
+	if err := s.wal.removeAll(); err != nil {
+		return fmt.Errorf("failed to remove WAL: %w", err)
 	}
 	return nil
 }
@@ -473,6 +470,11 @@ func (s *storage) flushPartitions() error {
 		}
 		if err := s.partitionList.swap(part, newPart); err != nil {
 			return fmt.Errorf("failed to swap partitions: %w", err)
+		}
+
+		id := part.minTimestamp()
+		if err := s.wal.truncate(id); err != nil {
+			return fmt.Errorf("failed to truncate WAL: %w", err)
 		}
 	}
 	return nil

@@ -77,8 +77,9 @@ func (w fileWAL) append(op walOperation, rows []Row) error {
 	return nil
 }
 
-func (w fileWAL) truncate(index int) error {
-	// FIXME: Truncate the contents before the index.
+func (w fileWAL) truncate(id int64) error {
+	// FIXME: Truncate the specified index.
+	//   To do so, make file with the name minTimestamp for each partition.
 	os.RemoveAll(w.filename) // FIXME: remove
 	return nil
 }
@@ -86,6 +87,10 @@ func (w fileWAL) truncate(index int) error {
 // flush flushes all buffered entries to the underlying file.
 func (w fileWAL) flush() error {
 	return w.w.Flush()
+}
+
+func (w fileWAL) removeAll() error {
+	return os.RemoveAll(w.filename)
 }
 
 type walRecord struct {
