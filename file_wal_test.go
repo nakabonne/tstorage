@@ -66,7 +66,7 @@ func Test_fileWAL_append_read(t *testing.T) {
 			require.NoError(t, err)
 			path := filepath.Join(tmpDir, "wal")
 
-			wal, err := newFileWal(path, 4096)
+			wal, err := newDiskWAL(path, 4096)
 			require.NoError(t, err)
 
 			err = wal.append(tt.args.op, tt.args.rows)
@@ -76,7 +76,7 @@ func Test_fileWAL_append_read(t *testing.T) {
 			require.NoError(t, err)
 
 			// Read all wal rows.
-			reader, err := newFileWalReader(path)
+			reader, err := newDiskWALReader(path)
 			require.NoError(t, err)
 
 			got := make([]Row, 0)

@@ -6,33 +6,45 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"math"
 	"os"
+	"path/filepath"
+	"strconv"
 	"sync"
+	"time"
 )
 
-type fileWAL struct {
-	filename     string
-	w            *bufio.Writer
+// diskWAL contains multiple segment files. One segment is responsible for one partition.
+type diskWAL struct {
+	dir string
+	// Buffered-writer to the active segment
+	w *bufio.Writer
+	// File descriptor to the active segment
+	fd           *os.File
 	bufferedSize int
 	mu           sync.Mutex
 }
 
-func newFileWal(filename string, bufferedSize int) (wal, error) {
-	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func newDiskWAL(dir string, bufferedSize int) (wal, error) {
+	if err := os.MkdirAll(dir, fs.ModePerm); err != nil {
+		return nil, fmt.Errorf("failed to make WAL dir: %w", err)
+	}
+	f, err := createSegmentFile(dir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create WAL: %w", err)
+		return nil, err
 	}
 
-	return &fileWAL{
-		filename:     filename,
+	return &diskWAL{
+		dir:          dir,
 		w:            bufio.NewWriterSize(f, bufferedSize),
+		fd:           f,
 		bufferedSize: bufferedSize,
 	}, nil
 }
 
 // append appends the given entry to the end of a file via the file descriptor it has.
-func (w fileWAL) append(op walOperation, rows []Row) error {
+func (w diskWAL) append(op walOperation, rows []Row) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -77,20 +89,50 @@ func (w fileWAL) append(op walOperation, rows []Row) error {
 	return nil
 }
 
-func (w fileWAL) truncate(id int64) error {
-	// FIXME: Truncate the specified index.
-	//   To do so, make file with the name minTimestamp for each partition.
-	os.RemoveAll(w.filename) // FIXME: remove
+// truncateOldest removes only the oldest segment.
+func (w diskWAL) truncateOldest() error {
+	// FIXME: Find the oldest segment and remove it
 	return nil
 }
 
 // flush flushes all buffered entries to the underlying file.
-func (w fileWAL) flush() error {
+func (w diskWAL) flush() error {
 	return w.w.Flush()
 }
 
-func (w fileWAL) removeAll() error {
-	return os.RemoveAll(w.filename)
+// punctuate set boundary and creates a new segment.
+func (w diskWAL) punctuate() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if err := w.fd.Close(); err != nil {
+		return nil
+	}
+	f, err := createSegmentFile(w.dir)
+	if err != nil {
+		return err
+	}
+	w.fd = f
+	w.w = bufio.NewWriterSize(f, w.bufferedSize)
+	return nil
+}
+
+// removeAll removes all segments.
+func (w diskWAL) removeAll() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if err := w.fd.Close(); err != nil {
+		return err
+	}
+	return os.RemoveAll(w.dir)
+}
+
+func createSegmentFile(dir string) (*os.File, error) {
+	name := strconv.Itoa(int(time.Now().Unix()))
+	f, err := os.OpenFile(filepath.Join(dir, name), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create segment file: %w", err)
+	}
+	return f, nil
 }
 
 type walRecord struct {
@@ -98,26 +140,28 @@ type walRecord struct {
 	row Row
 }
 
-type fileWALReader struct {
+type diskWALReader struct {
 	file    *os.File
 	r       *bufio.Reader
 	current walRecord
 	err     error
 }
 
-func newFileWalReader(filename string) (*fileWALReader, error) {
+func newDiskWALReader(filename string) (*diskWALReader, error) {
+	// FIXME: Stop receiving filename
 	fd, err := os.Open(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file %q: %w", filename, err)
 	}
 
-	return &fileWALReader{
+	return &diskWALReader{
 		file: fd,
 		r:    bufio.NewReader(fd),
 	}, nil
 }
 
-func (f *fileWALReader) next() bool {
+func (f *diskWALReader) next() bool {
+	// FIXME: Inspect all files under the wal dir.
 	op, err := f.r.ReadByte()
 	if errors.Is(err, io.EOF) {
 		return false
@@ -171,14 +215,14 @@ func (f *fileWALReader) next() bool {
 }
 
 // error gives back an error if it has been facing an error while reading.
-func (f *fileWALReader) error() error {
+func (f *diskWALReader) error() error {
 	return f.err
 }
 
-func (f *fileWALReader) record() *walRecord {
+func (f *diskWALReader) record() *walRecord {
 	return &f.current
 }
 
-func (f *fileWALReader) close() error {
+func (f *diskWALReader) close() error {
 	return f.file.Close()
 }

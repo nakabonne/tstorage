@@ -21,7 +21,8 @@ const (
 type wal interface {
 	append(op walOperation, rows []Row) error
 	flush() error
-	truncate(id int64) error
+	punctuate() error
+	truncateOldest() error
 	removeAll() error
 }
 
@@ -39,7 +40,11 @@ func (f *nopWAL) flush() error {
 	return nil
 }
 
-func (f *nopWAL) truncate(_ int64) error {
+func (f *nopWAL) punctuate() error {
+	return nil
+}
+
+func (f *nopWAL) truncateOldest() error {
 	return nil
 }
 

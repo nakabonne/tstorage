@@ -202,7 +202,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 
 	// Set WAL
 	if s.walBufferedSize >= 0 {
-		wal, err := newFileWal(walPath, s.walBufferedSize)
+		wal, err := newDiskWAL(walPath, s.walBufferedSize)
 		if err != nil {
 			return nil, err
 		}
@@ -472,8 +472,7 @@ func (s *storage) flushPartitions() error {
 			return fmt.Errorf("failed to swap partitions: %w", err)
 		}
 
-		id := part.minTimestamp()
-		if err := s.wal.truncate(id); err != nil {
+		if err := s.wal.truncateOldest(); err != nil {
 			return fmt.Errorf("failed to truncate WAL: %w", err)
 		}
 	}
@@ -571,7 +570,7 @@ func (s *storage) removeExpiredPartitions() error {
 
 // recoverWAL inserts all records within the given wal, and then remove all WALs.
 func (s *storage) recoverWAL(walPath string) error {
-	reader, err := newFileWalReader(walPath)
+	reader, err := newDiskWALReader(walPath)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
