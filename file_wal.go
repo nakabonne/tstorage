@@ -16,6 +16,13 @@ import (
 )
 
 // diskWAL contains multiple segment files. One segment is responsible for one partition.
+// They can be easily sorted because they are named using the created timestamp.
+// Macro layout is like:
+/*
+  .wal/
+  ├── 1635299332
+  └── 1635299333
+*/
 type diskWAL struct {
 	dir string
 	// Buffered-writer to the active segment
@@ -44,7 +51,7 @@ func newDiskWAL(dir string, bufferedSize int) (wal, error) {
 }
 
 // append appends the given entry to the end of a file via the file descriptor it has.
-func (w diskWAL) append(op walOperation, rows []Row) error {
+func (w *diskWAL) append(op walOperation, rows []Row) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -53,30 +60,30 @@ func (w diskWAL) append(op walOperation, rows []Row) error {
 		for _, row := range rows {
 			// Write the operation type
 			if err := w.w.WriteByte(byte(op)); err != nil {
-				return err
+				return fmt.Errorf("failed to write operation: %w", err)
 			}
 			name := marshalMetricName(row.Metric, row.Labels)
 			// Write the length of the metric name
 			lBuf := make([]byte, binary.MaxVarintLen64)
 			n := binary.PutUvarint(lBuf, uint64(len(name)))
 			if _, err := w.w.Write(lBuf[:n]); err != nil {
-				return err
+				return fmt.Errorf("failed to write the length of the metric name: %w", err)
 			}
 			// Write the metric name
 			if _, err := w.w.WriteString(name); err != nil {
-				return err
+				return fmt.Errorf("failed to write the metric name: %w", err)
 			}
 			// Write the timestamp
 			tsBuf := make([]byte, binary.MaxVarintLen64)
 			n = binary.PutVarint(tsBuf, row.DataPoint.Timestamp)
 			if _, err := w.w.Write(tsBuf[:n]); err != nil {
-				return err
+				return fmt.Errorf("failed to write the timestamp: %w", err)
 			}
 			// Write the value
 			vBuf := make([]byte, binary.MaxVarintLen64)
 			n = binary.PutUvarint(vBuf, math.Float64bits(row.DataPoint.Value))
 			if _, err := w.w.Write(vBuf[:n]); err != nil {
-				return err
+				return fmt.Errorf("failed to write the value: %w", err)
 			}
 		}
 	default:
@@ -90,20 +97,26 @@ func (w diskWAL) append(op walOperation, rows []Row) error {
 }
 
 // truncateOldest removes only the oldest segment.
-func (w diskWAL) truncateOldest() error {
+func (w *diskWAL) truncateOldest() error {
 	// FIXME: Find the oldest segment and remove it
 	return nil
 }
 
 // flush flushes all buffered entries to the underlying file.
-func (w diskWAL) flush() error {
-	return w.w.Flush()
+func (w *diskWAL) flush() error {
+	if err := w.w.Flush(); err != nil {
+		return fmt.Errorf("failed to flush buffered-data into the underlying WAL file: %w", err)
+	}
+	return nil
 }
 
 // punctuate set boundary and creates a new segment.
-func (w diskWAL) punctuate() error {
+func (w *diskWAL) punctuate() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	if err := w.flush(); err != nil {
+		return err
+	}
 	if err := w.fd.Close(); err != nil {
 		return nil
 	}
@@ -117,7 +130,7 @@ func (w diskWAL) punctuate() error {
 }
 
 // removeAll removes all segments.
-func (w diskWAL) removeAll() error {
+func (w *diskWAL) removeAll() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if err := w.fd.Close(); err != nil {
@@ -126,8 +139,14 @@ func (w diskWAL) removeAll() error {
 	return os.RemoveAll(w.dir)
 }
 
+// createSegmentFile creates a new file with the name of the current timestamp.
 func createSegmentFile(dir string) (*os.File, error) {
-	name := strconv.Itoa(int(time.Now().Unix()))
+	now := int(time.Now().Unix())
+	name := strconv.Itoa(now)
+	_, err := os.Stat(filepath.Join(dir, name))
+	if !errors.Is(err, os.ErrNotExist) {
+		name = strconv.Itoa(now + 1)
+	}
 	f, err := os.OpenFile(filepath.Join(dir, name), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create segment file: %w", err)
