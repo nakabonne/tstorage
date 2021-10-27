@@ -141,27 +141,64 @@ type walRecord struct {
 }
 
 type diskWALReader struct {
+	dir          string
+	files        []os.DirEntry
+	rowsToInsert []Row
+}
+
+func newDiskWALReader(dir string) (*diskWALReader, error) {
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read the WAL dir: %w", err)
+	}
+
+	return &diskWALReader{
+		dir:          dir,
+		files:        files,
+		rowsToInsert: make([]Row, 0),
+	}, nil
+}
+
+// readAll reads all segment files and caches the result for each operation.
+func (f *diskWALReader) readAll() error {
+	for _, file := range f.files {
+		if file.IsDir() {
+			return fmt.Errorf("unexpected directory found under the WAL directory: %s", file.Name())
+		}
+		fd, err := os.Open(filepath.Join(f.dir, file.Name()))
+		if err != nil {
+			return fmt.Errorf("failed to open WAL segment file: %w", err)
+		}
+		segment := &segment{
+			file: fd,
+			r:    bufio.NewReader(fd),
+		}
+		for segment.next() {
+			rec := segment.record()
+			switch rec.op {
+			case operationInsert:
+				f.rowsToInsert = append(f.rowsToInsert, rec.row)
+			}
+		}
+		if err := segment.close(); err != nil {
+			return err
+		}
+		if segment.error() != nil {
+			return fmt.Errorf("encounter an error while reading WAL segment file %q: %w", file.Name(), segment.error())
+		}
+	}
+	return nil
+}
+
+// segment represents a segment file.
+type segment struct {
 	file    *os.File
 	r       *bufio.Reader
 	current walRecord
 	err     error
 }
 
-func newDiskWALReader(filename string) (*diskWALReader, error) {
-	// FIXME: Stop receiving filename
-	fd, err := os.Open(filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open file %q: %w", filename, err)
-	}
-
-	return &diskWALReader{
-		file: fd,
-		r:    bufio.NewReader(fd),
-	}, nil
-}
-
-func (f *diskWALReader) next() bool {
-	// FIXME: Inspect all files under the wal dir.
+func (f *segment) next() bool {
 	op, err := f.r.ReadByte()
 	if errors.Is(err, io.EOF) {
 		return false
@@ -215,14 +252,14 @@ func (f *diskWALReader) next() bool {
 }
 
 // error gives back an error if it has been facing an error while reading.
-func (f *diskWALReader) error() error {
+func (f *segment) error() error {
 	return f.err
 }
 
-func (f *diskWALReader) record() *walRecord {
+func (f *segment) record() *walRecord {
 	return &f.current
 }
 
-func (f *diskWALReader) close() error {
+func (f *segment) close() error {
 	return f.file.Close()
 }

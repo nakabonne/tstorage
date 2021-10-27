@@ -195,14 +195,14 @@ func NewStorage(opts ...Option) (Storage, error) {
 	}
 
 	// Start WAL recovery if there is.
-	walPath := filepath.Join(s.dataPath, "wal")
-	if err := s.recoverWAL(walPath); err != nil {
+	walDir := filepath.Join(s.dataPath, "wal")
+	if err := s.recoverWAL(walDir); err != nil {
 		return nil, fmt.Errorf("failed to recover WAL: %w", err)
 	}
 
 	// Set WAL
 	if s.walBufferedSize >= 0 {
-		wal, err := newDiskWAL(walPath, s.walBufferedSize)
+		wal, err := newDiskWAL(walDir, s.walBufferedSize)
 		if err != nil {
 			return nil, err
 		}
@@ -569,8 +569,8 @@ func (s *storage) removeExpiredPartitions() error {
 }
 
 // recoverWAL inserts all records within the given wal, and then remove all WALs.
-func (s *storage) recoverWAL(walPath string) error {
-	reader, err := newDiskWALReader(walPath)
+func (s *storage) recoverWAL(walDir string) error {
+	reader, err := newDiskWALReader(walDir)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
@@ -578,31 +578,22 @@ func (s *storage) recoverWAL(walPath string) error {
 		return err
 	}
 
-	walRecords := make([]Row, 0)
-	for reader.next() {
-		rec := reader.record()
-		if rec.op == operationInsert {
-			walRecords = append(walRecords, rec.row)
-		}
+	if err := reader.readAll(); err != nil {
+		return fmt.Errorf("failed to read WAL: %w", err)
 	}
-	if err := reader.close(); err != nil {
-		return err
-	}
-	if reader.error() != nil {
-		return fmt.Errorf("encounter an error while recovering WAL: %w", reader.error())
-	}
+	rowsToInsert := reader.rowsToInsert
 
-	if len(walRecords) == 0 {
+	if len(rowsToInsert) == 0 {
 		return nil
 	}
 
 	// Insert wal records into the head partition.
 	p := newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision)
-	if _, err := p.insertRows(walRecords); err != nil {
+	if _, err := p.insertRows(rowsToInsert); err != nil {
 		return err
 	}
 	s.partitionList.insert(p)
-	return os.RemoveAll(walPath)
+	return os.RemoveAll(walDir)
 }
 
 func (s *storage) inMemoryMode() bool {

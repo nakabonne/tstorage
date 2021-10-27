@@ -21,7 +21,7 @@ func Test_fileWAL_append_read(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "",
+			name: "successfully append and read",
 			args: args{
 				op: operationInsert,
 				rows: []Row{
@@ -78,18 +78,9 @@ func Test_fileWAL_append_read(t *testing.T) {
 			// Read all wal rows.
 			reader, err := newDiskWALReader(path)
 			require.NoError(t, err)
-
-			got := make([]Row, 0)
-			for reader.next() {
-				rec := reader.record()
-				if rec.op == operationInsert {
-					got = append(got, rec.row)
-				}
-			}
-			err = reader.close()
+			err = reader.readAll()
 			require.NoError(t, err)
-			require.NoError(t, reader.error())
-
+			got := reader.rowsToInsert
 			assert.Equal(t, got, tt.want)
 		})
 	}
