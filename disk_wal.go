@@ -96,12 +96,6 @@ func (w *diskWAL) append(op walOperation, rows []Row) error {
 	return nil
 }
 
-// truncateOldest removes only the oldest segment.
-func (w *diskWAL) truncateOldest() error {
-	// FIXME: Find the oldest segment and remove it
-	return nil
-}
-
 // flush flushes all buffered entries to the underlying file.
 func (w *diskWAL) flush() error {
 	if err := w.w.Flush(); err != nil {
@@ -129,14 +123,40 @@ func (w *diskWAL) punctuate() error {
 	return nil
 }
 
-// removeAll removes all segments.
+// truncateOldest removes only the oldest segment.
+func (w *diskWAL) removeOldest() error {
+	// FIXME: Find the oldest segment and remove it
+	return nil
+}
+
+// removeAll removes all segment files.
 func (w *diskWAL) removeAll() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if err := w.fd.Close(); err != nil {
 		return err
 	}
-	return os.RemoveAll(w.dir)
+	if err := os.RemoveAll(w.dir); err != nil {
+		return fmt.Errorf("failed to remove files under %q: %w", w.dir, err)
+	}
+	return os.MkdirAll(w.dir, fs.ModePerm)
+}
+
+// refresh removes all segment files and make a new segment.
+func (w *diskWAL) refresh() error {
+	if err := w.removeAll(); err != nil {
+		return err
+	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	f, err := createSegmentFile(w.dir)
+	if err != nil {
+		return err
+	}
+	w.fd = f
+	w.w = bufio.NewWriterSize(f, w.bufferedSize)
+	return nil
 }
 
 // createSegmentFile creates a new file with the name of the current timestamp.

@@ -45,6 +45,8 @@ const (
 
 	writablePartitionsNum = 2
 	checkExpiredInterval  = time.Hour
+
+	walDirName = "wal"
 )
 
 // Storage provides goroutine safe capabilities of insertion into and retrieval from the time-series storage.
@@ -194,13 +196,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 		return nil, fmt.Errorf("failed to make data directory %s: %w", s.dataPath, err)
 	}
 
-	// Start WAL recovery if there is.
-	walDir := filepath.Join(s.dataPath, "wal")
-	if err := s.recoverWAL(walDir); err != nil {
-		return nil, fmt.Errorf("failed to recover WAL: %w", err)
-	}
-
-	// Set WAL
+	walDir := filepath.Join(s.dataPath, walDirName)
 	if s.walBufferedSize >= 0 {
 		wal, err := newDiskWAL(walDir, s.walBufferedSize)
 		if err != nil {
@@ -209,21 +205,20 @@ func NewStorage(opts ...Option) (Storage, error) {
 		s.wal = wal
 	}
 
-	entries, err := os.ReadDir(s.dataPath)
+	// Read existent partitions from the disk.
+	dirs, err := os.ReadDir(s.dataPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open data directory: %w", err)
 	}
-	if len(entries) == 0 {
+	if len(dirs) == 0 {
 		s.partitionList.insert(newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision))
 		return s, nil
 	}
-
-	// Read existent partitions from the disk.
 	isPartitionDir := func(f fs.DirEntry) bool {
 		return f.IsDir() && partitionDirRegex.MatchString(f.Name())
 	}
-	partitions := make([]partition, 0, len(entries))
-	for _, e := range entries {
+	partitions := make([]partition, 0, len(dirs))
+	for _, e := range dirs {
 		if !isPartitionDir(e) {
 			continue
 		}
@@ -244,6 +239,10 @@ func NewStorage(opts ...Option) (Storage, error) {
 		s.partitionList.insert(p)
 	}
 	s.partitionList.insert(newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision))
+	// Start WAL recovery if there is.
+	if err := s.recoverWAL(walDir); err != nil {
+		return nil, fmt.Errorf("failed to recover WAL: %w", err)
+	}
 
 	// periodically check and permanently remove expired partitions.
 	go func() {
@@ -472,7 +471,7 @@ func (s *storage) flushPartitions() error {
 			return fmt.Errorf("failed to swap partitions: %w", err)
 		}
 
-		if err := s.wal.truncateOldest(); err != nil {
+		if err := s.wal.removeOldest(); err != nil {
 			return fmt.Errorf("failed to truncate WAL: %w", err)
 		}
 	}
@@ -568,7 +567,7 @@ func (s *storage) removeExpiredPartitions() error {
 	return nil
 }
 
-// recoverWAL inserts all records within the given wal, and then remove all WALs.
+// recoverWAL inserts all records within the given wal, and then removes all WAL segment files.
 func (s *storage) recoverWAL(walDir string) error {
 	reader, err := newDiskWALReader(walDir)
 	if errors.Is(err, os.ErrNotExist) {
@@ -581,19 +580,14 @@ func (s *storage) recoverWAL(walDir string) error {
 	if err := reader.readAll(); err != nil {
 		return fmt.Errorf("failed to read WAL: %w", err)
 	}
-	rowsToInsert := reader.rowsToInsert
 
-	if len(rowsToInsert) == 0 {
+	if len(reader.rowsToInsert) == 0 {
 		return nil
 	}
-
-	// Insert wal records into the head partition.
-	p := newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision)
-	if _, err := p.insertRows(rowsToInsert); err != nil {
-		return err
+	if err := s.InsertRows(reader.rowsToInsert); err != nil {
+		return fmt.Errorf("failed to insert rows recovered from WAL: %w", err)
 	}
-	s.partitionList.insert(p)
-	return os.RemoveAll(walDir)
+	return s.wal.refresh()
 }
 
 func (s *storage) inMemoryMode() bool {

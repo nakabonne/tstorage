@@ -22,8 +22,9 @@ type wal interface {
 	append(op walOperation, rows []Row) error
 	flush() error
 	punctuate() error
-	truncateOldest() error
+	removeOldest() error
 	removeAll() error
+	refresh() error
 }
 
 type nopWAL struct {
@@ -44,10 +45,14 @@ func (f *nopWAL) punctuate() error {
 	return nil
 }
 
-func (f *nopWAL) truncateOldest() error {
+func (f *nopWAL) removeOldest() error {
 	return nil
 }
 
 func (f *nopWAL) removeAll() error {
+	return nil
+}
+
+func (f *nopWAL) refresh() error {
 	return nil
 }
