@@ -8,19 +8,23 @@ import (
 type walOperation byte
 
 const (
+	// The record format for operateInsert is as shown below:
+	/*
+	   +--------+---------------------+--------+--------------------+----------------+
+	   | op(1b) | len metric(varints) | metric | timestamp(varints) | value(varints) |
+	   +--------+---------------------+--------+--------------------+----------------+
+	*/
 	operationInsert walOperation = iota
 )
 
 // wal represents a write-ahead log, which offers durability guarantees.
-// See more: https://martinfowler.com/articles/patterns-of-distributed-systems/wal.html
 type wal interface {
-	append(entry walEntry) error
-}
-
-// walEntry is an entry in the write-ahead log.
-type walEntry struct {
-	operation walOperation
-	rows      []Row
+	append(op walOperation, rows []Row) error
+	flush() error
+	punctuate() error
+	removeOldest() error
+	removeAll() error
+	refresh() error
 }
 
 type nopWAL struct {
@@ -29,7 +33,26 @@ type nopWAL struct {
 	mu       sync.Mutex
 }
 
-func (f *nopWAL) append(entry walEntry) error {
-	// Do nothing
+func (f *nopWAL) append(_ walOperation, _ []Row) error {
+	return nil
+}
+
+func (f *nopWAL) flush() error {
+	return nil
+}
+
+func (f *nopWAL) punctuate() error {
+	return nil
+}
+
+func (f *nopWAL) removeOldest() error {
+	return nil
+}
+
+func (f *nopWAL) removeAll() error {
+	return nil
+}
+
+func (f *nopWAL) refresh() error {
 	return nil
 }

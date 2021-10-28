@@ -56,10 +56,11 @@ func (m *memoryPartition) insertRows(rows []Row) ([]Row, error) {
 	if len(rows) == 0 {
 		return nil, fmt.Errorf("no rows given")
 	}
-	m.wal.append(walEntry{
-		operation: operationInsert,
-		rows:      rows,
-	})
+	// FIXME: Just emitting log is enough
+	err := m.wal.append(operationInsert, rows)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write to WAL: %w", err)
+	}
 
 	// Set min timestamp at only first.
 	m.once.Do(func() {
