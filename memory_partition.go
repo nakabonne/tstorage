@@ -56,6 +56,7 @@ func (m *memoryPartition) insertRows(rows []Row) ([]Row, error) {
 	if len(rows) == 0 {
 		return nil, fmt.Errorf("no rows given")
 	}
+	// FIXME: Just emitting log is enough
 	err := m.wal.append(operationInsert, rows)
 	if err != nil {
 		return nil, fmt.Errorf("failed to write to WAL: %w", err)
