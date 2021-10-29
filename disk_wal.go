@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
-	"time"
+	"sync/atomic"
 )
 
 // diskWAL contains multiple segment files. One segment is responsible for one partition.
@@ -20,34 +20,36 @@ import (
 // Macro layout is like:
 /*
   .wal/
-  ├── 1635299332
-  └── 1635299333
+  ├── 0
+  └── 1
 */
 type diskWAL struct {
-	dir string
+	dir          string
+	bufferedSize int
 	// Buffered-writer to the active segment
 	w *bufio.Writer
 	// File descriptor to the active segment
-	fd           *os.File
-	bufferedSize int
-	mu           sync.Mutex
+	fd    *os.File
+	index uint32
+	mu    sync.Mutex
 }
 
 func newDiskWAL(dir string, bufferedSize int) (wal, error) {
 	if err := os.MkdirAll(dir, fs.ModePerm); err != nil {
 		return nil, fmt.Errorf("failed to make WAL dir: %w", err)
 	}
-	f, err := createSegmentFile(dir)
+	w := &diskWAL{
+		dir:          dir,
+		bufferedSize: bufferedSize,
+	}
+	f, err := w.createSegmentFile(dir)
 	if err != nil {
 		return nil, err
 	}
+	w.fd = f
+	w.w = bufio.NewWriterSize(f, bufferedSize)
 
-	return &diskWAL{
-		dir:          dir,
-		w:            bufio.NewWriterSize(f, bufferedSize),
-		fd:           f,
-		bufferedSize: bufferedSize,
-	}, nil
+	return w, nil
 }
 
 // append appends the given entry to the end of a file via the file descriptor it has.
@@ -112,9 +114,9 @@ func (w *diskWAL) punctuate() error {
 		return err
 	}
 	if err := w.fd.Close(); err != nil {
-		return nil
+		return err
 	}
-	f, err := createSegmentFile(w.dir)
+	f, err := w.createSegmentFile(w.dir)
 	if err != nil {
 		return err
 	}
@@ -125,8 +127,16 @@ func (w *diskWAL) punctuate() error {
 
 // truncateOldest removes only the oldest segment.
 func (w *diskWAL) removeOldest() error {
-	// FIXME: Find the oldest segment and remove it
-	return nil
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	files, err := os.ReadDir(w.dir)
+	if err != nil {
+		return fmt.Errorf("failed to read WAL directory: %w", err)
+	}
+	if len(files) == 0 {
+		return fmt.Errorf("no segment found")
+	}
+	return os.RemoveAll(filepath.Join(w.dir, files[0].Name()))
 }
 
 // removeAll removes all segment files.
@@ -150,7 +160,7 @@ func (w *diskWAL) refresh() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	f, err := createSegmentFile(w.dir)
+	f, err := w.createSegmentFile(w.dir)
 	if err != nil {
 		return err
 	}
@@ -159,18 +169,14 @@ func (w *diskWAL) refresh() error {
 	return nil
 }
 
-// createSegmentFile creates a new file with the name of the current timestamp.
-func createSegmentFile(dir string) (*os.File, error) {
-	now := int(time.Now().Unix())
-	name := strconv.Itoa(now)
-	_, err := os.Stat(filepath.Join(dir, name))
-	if !errors.Is(err, os.ErrNotExist) {
-		name = strconv.Itoa(now + 1)
-	}
+// createSegmentFile creates a new file with the name of the numbering index.
+func (w *diskWAL) createSegmentFile(dir string) (*os.File, error) {
+	name := strconv.Itoa(int(atomic.LoadUint32(&w.index)))
 	f, err := os.OpenFile(filepath.Join(dir, name), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create segment file: %w", err)
 	}
+	atomic.AddUint32(&w.index, 1)
 	return f, nil
 }
 
@@ -231,8 +237,9 @@ func (f *diskWALReader) readAll() error {
 
 // segment represents a segment file.
 type segment struct {
-	file    *os.File
-	r       *bufio.Reader
+	file *os.File
+	r    *bufio.Reader
+	// FIXME: Use interface to support other operation type
 	current walRecord
 	err     error
 }

@@ -188,7 +188,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 	}
 
 	if s.inMemoryMode() {
-		s.partitionList.insert(newMemoryPartition(nil, s.partitionDuration, s.timestampPrecision))
+		s.newPartition(nil, false)
 		return s, nil
 	}
 
@@ -211,7 +211,7 @@ func NewStorage(opts ...Option) (Storage, error) {
 		return nil, fmt.Errorf("failed to open data directory: %w", err)
 	}
 	if len(dirs) == 0 {
-		s.partitionList.insert(newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision))
+		s.newPartition(nil, false)
 		return s, nil
 	}
 	isPartitionDir := func(f fs.DirEntry) bool {
@@ -236,13 +236,13 @@ func NewStorage(opts ...Option) (Storage, error) {
 		return partitions[i].minTimestamp() < partitions[j].minTimestamp()
 	})
 	for _, p := range partitions {
-		s.partitionList.insert(p)
+		s.newPartition(p, false)
 	}
-	s.partitionList.insert(newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision))
 	// Start WAL recovery if there is.
 	if err := s.recoverWAL(walDir); err != nil {
 		return nil, fmt.Errorf("failed to recover WAL: %w", err)
 	}
+	s.newPartition(nil, false)
 
 	// periodically check and permanently remove expired partitions.
 	go func() {
@@ -288,7 +288,9 @@ func (s *storage) InsertRows(rows []Row) error {
 
 	insert := func() error {
 		defer func() { <-s.workersLimitCh }()
-		s.ensureActiveHead()
+		if err := s.ensureActiveHead(); err != nil {
+			return err
+		}
 		iterator := s.partitionList.newIterator()
 		n := s.partitionList.size()
 		rowsToInsert := rows
@@ -333,23 +335,24 @@ func (s *storage) InsertRows(rows []Row) error {
 	}
 }
 
-// ensureActiveHead ensures the partitionList contains an active partition.
+// ensureActiveHead ensures the head of partitionList is an active partition.
 // If none, it creates a new one.
-func (s *storage) ensureActiveHead() {
+func (s *storage) ensureActiveHead() error {
 	head := s.partitionList.getHead()
 	if head.active() {
-		return
+		return nil
 	}
 
 	// All partitions seems to be inactive so add a new partition to the list.
-	p := newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision)
-	s.partitionList.insert(p)
+	if err := s.newPartition(nil, true); err != nil {
+		return err
+	}
 	go func() {
 		if err := s.flushPartitions(); err != nil {
 			s.logger.Printf("failed to flush in-memory partitions: %v", err)
 		}
 	}()
-
+	return nil
 }
 
 func (s *storage) Select(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
@@ -406,8 +409,9 @@ func (s *storage) Close() error {
 
 	// Make all writable partitions read-only by inserting as same number of those.
 	for i := 0; i < writablePartitionsNum; i++ {
-		p := newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision)
-		s.partitionList.insert(p)
+		if err := s.newPartition(nil, true); err != nil {
+			return err
+		}
 	}
 	if err := s.flushPartitions(); err != nil {
 		return fmt.Errorf("failed to close storage: %w", err)
@@ -418,6 +422,17 @@ func (s *storage) Close() error {
 	// All partitions have been flushed, so WAL isn't needed anymore.
 	if err := s.wal.removeAll(); err != nil {
 		return fmt.Errorf("failed to remove WAL: %w", err)
+	}
+	return nil
+}
+
+func (s *storage) newPartition(p partition, punctuateWal bool) error {
+	if p == nil {
+		p = newMemoryPartition(s.wal, s.partitionDuration, s.timestampPrecision)
+	}
+	s.partitionList.insert(p)
+	if punctuateWal {
+		return s.wal.punctuate()
 	}
 	return nil
 }
@@ -472,7 +487,7 @@ func (s *storage) flushPartitions() error {
 		}
 
 		if err := s.wal.removeOldest(); err != nil {
-			return fmt.Errorf("failed to truncate WAL: %w", err)
+			return fmt.Errorf("failed to remove oldest WAL segment: %w", err)
 		}
 	}
 	return nil
