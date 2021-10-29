@@ -3,6 +3,7 @@ package tstorage
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,4 +49,26 @@ func Test_diskWAL_append_read(t *testing.T) {
 	require.NoError(t, err)
 	got := reader.rowsToInsert
 	assert.Equal(t, rows, got)
+}
+
+func Test_diskWAL_removeOldest(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "tstorage-test")
+	require.NoError(t, err)
+	for i := 0; i < 3; i++ {
+		err := os.Mkdir(filepath.Join(tmpDir, strconv.Itoa(i)), os.ModePerm)
+		require.NoError(t, err)
+	}
+	w := &diskWAL{
+		dir: tmpDir,
+	}
+	err = w.removeOldest()
+	require.NoError(t, err)
+	files, err := os.ReadDir(w.dir)
+	require.NoError(t, err)
+	want := []string{"1", "2"}
+	got := []string{}
+	for _, f := range files {
+		got = append(got, f.Name())
+	}
+	assert.Equal(t, want, got)
 }
