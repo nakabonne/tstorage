@@ -228,7 +228,13 @@ func (f *diskWALReader) readAll() error {
 		if err := segment.close(); err != nil {
 			return err
 		}
-		if segment.error() != nil {
+
+		err = segment.error()
+		if errors.Is(err, io.ErrUnexpectedEOF) {
+			// It is not unusual for a line to be invalid, as it may well terminate in the middle of writing to the WAL.
+			return nil
+		}
+		if err != nil {
 			return fmt.Errorf("encounter an error while reading WAL segment file %q: %w", file.Name(), segment.error())
 		}
 	}
