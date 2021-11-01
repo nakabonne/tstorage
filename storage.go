@@ -339,7 +339,7 @@ func (s *storage) InsertRows(rows []Row) error {
 // If none, it creates a new one.
 func (s *storage) ensureActiveHead() error {
 	head := s.partitionList.getHead()
-	if head.active() {
+	if head != nil && head.active() {
 		return nil
 	}
 
