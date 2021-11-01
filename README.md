@@ -194,13 +194,6 @@ Sometimes we should handle data points that cross a partition boundary. That is 
 ## More
 Want to know more details on tstorage internal? If so see the blog post: [Write a time-series database engine from scratch](https://nakabonne.dev/posts/write-tsdb-from-scratch).
 
-## Used by
-- [ali](https://github.com/nakabonne/ali) - A load testing tool capable of performing real-time analysis
-- [gosivy](https://github.com/nakabonne/gosivy) - Real-time visualization tool for Go process metrics
-- [tstorage-server](https://github.com/bartmika/tstorage-server) - Fast time-series data storage server accessible over gRPC
-
-If you are using `tstorage` in a project please send a pull request to add it to the list.
-
 ## Acknowledgements
 This package is implemented based on tons of existing ideas. What I especially got inspired by are:
 - https://misfra.me/state-of-the-state-part-iii
