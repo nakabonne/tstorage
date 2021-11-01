@@ -62,6 +62,9 @@ func newPartitionList() partitionList {
 }
 
 func (p *partitionListImpl) getHead() partition {
+	if p.size() <= 0 {
+		return nil
+	}
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.head.value()
