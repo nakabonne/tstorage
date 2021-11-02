@@ -227,6 +227,10 @@ func NewStorage(opts ...Option) (Storage, error) {
 		if errors.Is(err, ErrNoDataPoints) {
 			continue
 		}
+		if errors.Is(err, errInvalidPartition) {
+			// It should be recovered by WAL
+			continue
+		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to open disk partition for %s: %w", path, err)
 		}
@@ -554,6 +558,8 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 	if err != nil {
 		return fmt.Errorf("failed to encode metadata: %w", err)
 	}
+
+	// It should write the meta file at last because what valid meta file exists proves the disk partition is valid.
 	metaPath := filepath.Join(dirPath, metaFileName)
 	if err := os.WriteFile(metaPath, b, fs.ModePerm); err != nil {
 		return fmt.Errorf("failed to write metadata to %s: %w", metaPath, err)

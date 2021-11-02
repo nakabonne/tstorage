@@ -3,6 +3,7 @@ package tstorage
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -15,6 +16,10 @@ import (
 const (
 	dataFileName = "data"
 	metaFileName = "meta.json"
+)
+
+var (
+	errInvalidPartition = errors.New("invalid partition")
 )
 
 // A disk partition implements a partition that uses local disk as a storage.
@@ -55,6 +60,11 @@ func openDiskPartition(dirPath string, retention time.Duration) (partition, erro
 	if dirPath == "" {
 		return nil, fmt.Errorf("dir path is required")
 	}
+	metaFilePath := filepath.Join(dirPath, metaFileName)
+	_, err := os.Stat(metaFilePath)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, errInvalidPartition
+	}
 
 	// Map data to the memory
 	dataPath := filepath.Join(dirPath, dataFileName)
@@ -77,7 +87,7 @@ func openDiskPartition(dirPath string, retention time.Duration) (partition, erro
 
 	// Read metadata to the heap
 	m := meta{}
-	mf, err := os.Open(filepath.Join(dirPath, metaFileName))
+	mf, err := os.Open(metaFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read metadata: %w", err)
 	}
