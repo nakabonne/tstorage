@@ -230,7 +230,7 @@ func (f *diskWALReader) readAll() error {
 		}
 
 		err = segment.error()
-		if errors.Is(err, io.ErrUnexpectedEOF) {
+		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
 			// It is not unusual for a line to be invalid, as it may well terminate in the middle of writing to the WAL.
 			return nil
 		}
