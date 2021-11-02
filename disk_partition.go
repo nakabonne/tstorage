@@ -101,7 +101,7 @@ func (d *diskPartition) insertRows(_ []Row) ([]Row, error) {
 
 func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
 	if d.expired() {
-		return nil, fmt.Errorf("this partition is expired")
+		return nil, fmt.Errorf("this partition is expired: %w", ErrNoDataPoints)
 	}
 	name := marshalMetricName(metric, labels)
 	mt, ok := d.meta.Metrics[name]
