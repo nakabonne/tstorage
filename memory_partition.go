@@ -232,7 +232,7 @@ func (m *memoryMetric) selectPoints(start, end int64) []*DataPoint {
 		})
 	}
 
-	if end >= maxTimestamp {
+	if end > maxTimestamp {
 		endIdx = int(size)
 	} else {
 		// Use binary search because points are in-order.
