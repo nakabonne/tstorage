@@ -359,6 +359,46 @@ func (s *storage) ensureActiveHead() error {
 	return nil
 }
 
+func (s *storage) LastN(metric string, labels []Label, n int64) ([]*DataPoint, error) {
+	if metric == "" {
+		return nil, fmt.Errorf("metric must be set")
+	}
+	if n < 0 {
+		return nil, fmt.Errorf("the given n is less than 0")
+	}
+	if n == 0 {
+		return []*DataPoint{}, nil
+	}
+
+	points := make([]*DataPoint, 0)
+
+	count := 0
+	// Iterate over all partitions from the newest one.
+	iterator := s.partitionList.newIterator()
+	for iterator.next() {
+		part := iterator.value()
+		if part == nil {
+			return nil, fmt.Errorf("unexpected empty partition found")
+		}
+		if part.minTimestamp() == 0 {
+			// Skip the partition that has no points.
+			continue
+		}
+		partPoints, err := part.getLastNDataPoints(metric, labels, n-int64(count))
+		if err != nil {
+			return nil, err
+		}
+		points = append(partPoints, points...)
+		if len(partPoints) == int(n) {
+			break
+		}
+	}
+	if len(points) == 0 {
+		return nil, ErrNoDataPoints
+	}
+	return points, nil
+}
+
 func (s *storage) Select(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
 	if metric == "" {
 		return nil, fmt.Errorf("metric must be set")

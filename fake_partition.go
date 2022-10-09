@@ -13,6 +13,9 @@ func (f *fakePartition) insertRows(_ []Row) ([]Row, error) {
 	return nil, f.err
 }
 
+func (f *fakePartition) getLastNDataPoints(_ string, _ []Label, _ int64) ([]*DataPoint, error) {
+	return nil, f.err
+}
 func (f *fakePartition) selectDataPoints(_ string, _ []Label, _, _ int64) ([]*DataPoint, error) {
 	return nil, f.err
 }

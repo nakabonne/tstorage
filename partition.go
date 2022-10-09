@@ -6,9 +6,12 @@ package tstorage
 //
 // The partition's lifecycle is: Writable -> ReadOnly.
 // *Writable*:
-//   it can be written. Only one partition can be writable within a partition list.
+//
+//	it can be written. Only one partition can be writable within a partition list.
+//
 // *ReadOnly*:
-//   it can't be written. Partitions will be ReadOnly if it exceeds the partition range.
+//
+//	it can't be written. Partitions will be ReadOnly if it exceeds the partition range.
 type partition interface {
 	// Write operations
 	//
@@ -23,6 +26,8 @@ type partition interface {
 	//
 	// selectDataPoints gives back certain metric's data points within the given range.
 	selectDataPoints(metric string, labels []Label, start, end int64) ([]*DataPoint, error)
+	// selectDataPoints gives back certain metric's data points within the given range.
+	getLastNDataPoints(metric string, labels []Label, n int64) ([]*DataPoint, error)
 	// minTimestamp returns the minimum Unix timestamp in milliseconds.
 	minTimestamp() int64
 	// maxTimestamp returns the maximum Unix timestamp in milliseconds.

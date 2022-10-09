@@ -111,3 +111,97 @@ func Test_storage_Select(t *testing.T) {
 		})
 	}
 }
+
+func Test_storage_GetN(t *testing.T) {
+	tests := []struct {
+		name    string
+		storage storage
+		metric  string
+		labels  []Label
+		n       int64
+		want    []*DataPoint
+		wantErr bool
+	}{
+		{
+			name:   "get last n from single partition",
+			metric: "metric1",
+			n:      2,
+			storage: func() storage {
+				part1 := newMemoryPartition(nil, 1*time.Hour, Seconds)
+				_, err := part1.insertRows([]Row{
+					{DataPoint: DataPoint{Timestamp: 1}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 2}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 3}, Metric: "metric1"},
+				})
+				if err != nil {
+					panic(err)
+				}
+				list := newPartitionList()
+				list.insert(part1)
+				return storage{
+					partitionList:  list,
+					workersLimitCh: make(chan struct{}, defaultWorkersLimit),
+				}
+			}(),
+			want: []*DataPoint{
+				{Timestamp: 2},
+				{Timestamp: 3},
+			},
+		},
+		{
+			name:   "select from three partitions",
+			metric: "metric1",
+			n:      2,
+			storage: func() storage {
+				part1 := newMemoryPartition(nil, 1*time.Hour, Seconds)
+				_, err := part1.insertRows([]Row{
+					{DataPoint: DataPoint{Timestamp: 1}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 2}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 3}, Metric: "metric1"},
+				})
+				if err != nil {
+					panic(err)
+				}
+				part2 := newMemoryPartition(nil, 1*time.Hour, Seconds)
+				_, err = part2.insertRows([]Row{
+					{DataPoint: DataPoint{Timestamp: 4}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 5}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 6}, Metric: "metric1"},
+				})
+				if err != nil {
+					panic(err)
+				}
+				part3 := newMemoryPartition(nil, 1*time.Hour, Seconds)
+				_, err = part3.insertRows([]Row{
+					{DataPoint: DataPoint{Timestamp: 7}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 8}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 9}, Metric: "metric1"},
+				})
+				if err != nil {
+					panic(err)
+				}
+				list := newPartitionList()
+				list.insert(part1)
+				list.insert(part2)
+				list.insert(part3)
+
+				return storage{
+					partitionList:  list,
+					workersLimitCh: make(chan struct{}, defaultWorkersLimit),
+				}
+			}(),
+			want: []*DataPoint{
+				{Timestamp: 8},
+				{Timestamp: 9},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.storage.LastN(tt.metric, tt.labels, 2)
+			assert.Equal(t, tt.wantErr, err != nil)
+			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

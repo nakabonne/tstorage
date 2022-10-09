@@ -119,6 +119,12 @@ func toUnix(t time.Time, precision TimestampPrecision) int64 {
 	}
 }
 
+func (m *memoryPartition) getLastNDataPoints(metric string, labels []Label, n int64) ([]*DataPoint, error) {
+	name := marshalMetricName(metric, labels)
+	mt := m.getMetric(name)
+	return mt.selectNPoints(n), nil
+}
+
 func (m *memoryPartition) selectDataPoints(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
 	name := marshalMetricName(metric, labels)
 	mt := m.getMetric(name)
@@ -208,6 +214,16 @@ func (m *memoryMetric) insertPoint(point *DataPoint) {
 	}
 
 	m.outOfOrderPoints = append(m.outOfOrderPoints, point)
+}
+
+func (m *memoryMetric) selectNPoints(n int64) []*DataPoint {
+	if n == 0 {
+		return []*DataPoint{}
+	}
+	if m.size < n {
+		return m.points
+	}
+	return m.points[m.size-n:]
 }
 
 // selectPoints returns a new slice by re-slicing with [startIdx:endIdx].

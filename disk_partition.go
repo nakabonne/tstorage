@@ -109,6 +109,41 @@ func (d *diskPartition) insertRows(_ []Row) ([]Row, error) {
 	return nil, fmt.Errorf("can't insert rows into disk partition")
 }
 
+func (d *diskPartition) getLastNDataPoints(metric string, labels []Label, n int64) ([]*DataPoint, error) {
+	// return err, stop iterating next partition
+	if d.expired() {
+		return nil, fmt.Errorf("this partition is expired: %w", ErrNoDataPoints)
+	}
+	name := marshalMetricName(metric, labels)
+	mt, ok := d.meta.Metrics[name]
+	if !ok {
+		return nil, ErrNoDataPoints
+	}
+	r := bytes.NewReader(d.mappedFile)
+	if _, err := r.Seek(mt.Offset, io.SeekStart); err != nil {
+		return nil, fmt.Errorf("failed to seek: %w", err)
+	}
+	decoder, err := newSeriesDecoder(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate decoder for metric %q in %q: %w", name, d.dirPath, err)
+	}
+
+	iterI := mt.NumDataPoints
+	if n < iterI {
+		iterI = n
+	}
+	// TODO: Divide fixed-lengh chunks when flushing, and index it.
+	points := make([]*DataPoint, 0, mt.NumDataPoints)
+	for i := 0; i < int(iterI); i++ {
+		point := &DataPoint{}
+		if err := decoder.decodePoint(point); err != nil {
+			return nil, fmt.Errorf("failed to decode point of metric %q in %q: %w", name, d.dirPath, err)
+		}
+		points = append(points, point)
+	}
+	return points, nil
+}
+
 func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
 	if d.expired() {
 		return nil, fmt.Errorf("this partition is expired: %w", ErrNoDataPoints)
