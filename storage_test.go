@@ -118,20 +118,20 @@ func Test_storage_GetN(t *testing.T) {
 		storage storage
 		metric  string
 		labels  []Label
-		n       int64
 		want    []*DataPoint
 		wantErr bool
 	}{
 		{
 			name:   "get last n from single partition",
 			metric: "metric1",
-			n:      2,
 			storage: func() storage {
 				part1 := newMemoryPartition(nil, 1*time.Hour, Seconds)
 				_, err := part1.insertRows([]Row{
 					{DataPoint: DataPoint{Timestamp: 1}, Metric: "metric1"},
 					{DataPoint: DataPoint{Timestamp: 2}, Metric: "metric1"},
 					{DataPoint: DataPoint{Timestamp: 3}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 4}, Metric: "metric1"},
+					{DataPoint: DataPoint{Timestamp: 5}, Metric: "metric1"},
 				})
 				if err != nil {
 					panic(err)
@@ -146,12 +146,13 @@ func Test_storage_GetN(t *testing.T) {
 			want: []*DataPoint{
 				{Timestamp: 2},
 				{Timestamp: 3},
+				{Timestamp: 4},
+				{Timestamp: 5},
 			},
 		},
 		{
 			name:   "select from three partitions",
 			metric: "metric1",
-			n:      2,
 			storage: func() storage {
 				part1 := newMemoryPartition(nil, 1*time.Hour, Seconds)
 				_, err := part1.insertRows([]Row{
@@ -191,6 +192,8 @@ func Test_storage_GetN(t *testing.T) {
 				}
 			}(),
 			want: []*DataPoint{
+				{Timestamp: 6},
+				{Timestamp: 7},
 				{Timestamp: 8},
 				{Timestamp: 9},
 			},
@@ -198,7 +201,7 @@ func Test_storage_GetN(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.storage.LastN(tt.metric, tt.labels, 2)
+			got, err := tt.storage.LastN(tt.metric, tt.labels, 4)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.want, got)

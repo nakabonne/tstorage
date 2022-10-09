@@ -372,6 +372,7 @@ func (s *storage) LastN(metric string, labels []Label, n int64) ([]*DataPoint, e
 
 	points := make([]*DataPoint, 0)
 
+	// points already read
 	count := 0
 	// Iterate over all partitions from the newest one.
 	iterator := s.partitionList.newIterator()
@@ -388,11 +389,19 @@ func (s *storage) LastN(metric string, labels []Label, n int64) ([]*DataPoint, e
 		if err != nil {
 			return nil, err
 		}
+		// skip if no points read
+		if len(partPoints) == 0 {
+			continue
+		}
+		count += len(partPoints)
+
 		points = append(partPoints, points...)
-		if len(partPoints) == int(n) {
+		// got enough points
+		if len(points) == int(n) {
 			break
 		}
 	}
+
 	if len(points) == 0 {
 		return nil, ErrNoDataPoints
 	}

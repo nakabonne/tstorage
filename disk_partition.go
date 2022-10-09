@@ -114,6 +114,9 @@ func (d *diskPartition) getLastNDataPoints(metric string, labels []Label, n int6
 	if d.expired() {
 		return nil, fmt.Errorf("this partition is expired: %w", ErrNoDataPoints)
 	}
+	if n == 0 {
+		return []*DataPoint{}, nil
+	}
 	name := marshalMetricName(metric, labels)
 	mt, ok := d.meta.Metrics[name]
 	if !ok {
@@ -128,20 +131,24 @@ func (d *diskPartition) getLastNDataPoints(metric string, labels []Label, n int6
 		return nil, fmt.Errorf("failed to generate decoder for metric %q in %q: %w", name, d.dirPath, err)
 	}
 
-	iterI := mt.NumDataPoints
-	if n < iterI {
-		iterI = n
-	}
 	// TODO: Divide fixed-lengh chunks when flushing, and index it.
 	points := make([]*DataPoint, 0, mt.NumDataPoints)
-	for i := 0; i < int(iterI); i++ {
+	for i := 0; i < int(mt.NumDataPoints); i++ {
 		point := &DataPoint{}
 		if err := decoder.decodePoint(point); err != nil {
 			return nil, fmt.Errorf("failed to decode point of metric %q in %q: %w", name, d.dirPath, err)
 		}
 		points = append(points, point)
 	}
-	return points, nil
+
+	// not enough points, need to iter to next partition
+	startIndex := 0
+
+	// enough points in partition
+	if n < mt.NumDataPoints {
+		startIndex = int(mt.NumDataPoints - n)
+	}
+	return points[startIndex:], nil
 }
 
 func (d *diskPartition) selectDataPoints(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
