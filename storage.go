@@ -66,6 +66,7 @@ type Reader interface {
 	// labels within the given start-end range. Keep in mind that start is inclusive, end is exclusive,
 	// and both must be Unix timestamp. ErrNoDataPoints will be returned if no data points found.
 	Select(metric string, labels []Label, start, end int64) (points []*DataPoint, err error)
+	LastN(metric string, labels []Label, n int64) (points []*DataPoint, err error)
 }
 
 // Row includes a data point along with properties to identify a kind of metrics.
