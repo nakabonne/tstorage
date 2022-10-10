@@ -1,4 +1,4 @@
-module github.com/nakabonne/tstorage
+module github.com/CoinSummer/tstorage
 
 go 1.17
 
