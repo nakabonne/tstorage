@@ -359,6 +359,13 @@ func (s *storage) ensureActiveHead() error {
 	return nil
 }
 
+// GetRetention returns specified retention in duration It return default value unless specified.
+//
+// Defaults to 14d
+func (s *storage) GetRetention() time.Duration {
+	return s.retention
+}
+
 func (s *storage) Select(metric string, labels []Label, start, end int64) ([]*DataPoint, error) {
 	if metric == "" {
 		return nil, fmt.Errorf("metric must be set")

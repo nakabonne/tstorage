@@ -109,5 +109,33 @@ func Test_storage_Select(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.want, got)
 		})
+
 	}
+
+}
+
+func Test_storage_Retention(t *testing.T) {
+
+	test := struct {
+		name    string
+		storage storage
+		metric  string
+		labels  []Label
+		start   int64
+		end     int64
+		want    time.Duration
+		wantErr bool
+	}{
+
+		name: "GetRetention test",
+		storage: func() storage {
+
+			return storage{
+				retention: time.Hour * 12,
+			}
+		}(),
+		want: time.Hour * 12,
+	}
+
+	assert.Equal(t, test.want, test.storage.GetRetention())
 }
