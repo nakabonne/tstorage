@@ -11,13 +11,14 @@ import (
 // A memoryPartition implements a partition to store data points on heap.
 // It offers a goroutine safe capabilities.
 type memoryPartition struct {
-	// A hash map from metric name to memoryMetric.
-	metrics sync.Map
 	// The number of data points
 	numPoints int64
 	// minT is immutable.
 	minT int64
 	maxT int64
+
+	// A hash map from metric name to memoryMetric.
+	metrics sync.Map
 
 	// Write ahead log.
 	wal wal
