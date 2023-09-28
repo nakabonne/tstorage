@@ -2,7 +2,6 @@ package tstorage
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nakabonne/tstorage/internal/syscall"
+	"github.com/vmihailenco/msgpack"
 )
 
 const (
@@ -92,7 +92,7 @@ func openDiskPartition(dirPath string, retention time.Duration) (partition, erro
 		return nil, fmt.Errorf("failed to read metadata: %w", err)
 	}
 	defer mf.Close()
-	decoder := json.NewDecoder(mf)
+	decoder := msgpack.NewDecoder(mf)
 	if err := decoder.Decode(&m); err != nil {
 		return nil, fmt.Errorf("failed to decode metadata: %w", err)
 	}
