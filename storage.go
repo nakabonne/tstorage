@@ -1,7 +1,6 @@
 package tstorage
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/nakabonne/tstorage/internal/cgroup"
 	"github.com/nakabonne/tstorage/internal/timerpool"
+	"github.com/vmihailenco/msgpack"
 )
 
 var (
@@ -548,7 +548,7 @@ func (s *storage) flush(dirPath string, m *memoryPartition) error {
 		return true
 	})
 
-	b, err := json.Marshal(&meta{
+	b, err := msgpack.Marshal(&meta{
 		MinTimestamp:  m.minTimestamp(),
 		MaxTimestamp:  m.maxTimestamp(),
 		NumDataPoints: m.size(),
