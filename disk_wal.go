@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
+
+	"github.com/golang/snappy"
 )
 
 // diskWAL contains multiple segment files. One segment is responsible for one partition.
@@ -28,6 +30,8 @@ type diskWAL struct {
 	bufferedSize int
 	// Buffered-writer to the active segment
 	w *bufio.Writer
+	// Snappy streaming writer
+	sw *snappy.Writer
 	// File descriptor to the active segment
 	fd    *os.File
 	index uint32
@@ -46,10 +50,27 @@ func newDiskWAL(dir string, bufferedSize int) (wal, error) {
 	if err != nil {
 		return nil, err
 	}
-	w.fd = f
-	w.w = bufio.NewWriterSize(f, bufferedSize)
+	w.initWriter(f)
 
 	return w, nil
+}
+
+// initWriter sets up the writer chain: bufio.Writer → snappy.Writer → os.File.
+func (w *diskWAL) initWriter(f *os.File) {
+	w.fd = f
+	w.sw = snappy.NewBufferedWriter(f)
+	w.w = bufio.NewWriterSize(w.sw, w.bufferedSize)
+}
+
+// closeWriter flushes and closes the entire writer chain.
+func (w *diskWAL) closeWriter() error {
+	if err := w.w.Flush(); err != nil {
+		return fmt.Errorf("failed to flush buffered-data into the underlying WAL file: %w", err)
+	}
+	if err := w.sw.Close(); err != nil {
+		return fmt.Errorf("failed to close snappy writer: %w", err)
+	}
+	return w.fd.Close()
 }
 
 // append appends the given entry to the end of a file via the file descriptor it has.
@@ -103,6 +124,9 @@ func (w *diskWAL) flush() error {
 	if err := w.w.Flush(); err != nil {
 		return fmt.Errorf("failed to flush buffered-data into the underlying WAL file: %w", err)
 	}
+	if err := w.sw.Flush(); err != nil {
+		return fmt.Errorf("failed to flush snappy writer: %w", err)
+	}
 	return nil
 }
 
@@ -110,18 +134,14 @@ func (w *diskWAL) flush() error {
 func (w *diskWAL) punctuate() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if err := w.flush(); err != nil {
-		return err
-	}
-	if err := w.fd.Close(); err != nil {
+	if err := w.closeWriter(); err != nil {
 		return err
 	}
 	f, err := w.createSegmentFile(w.dir)
 	if err != nil {
 		return err
 	}
-	w.fd = f
-	w.w = bufio.NewWriterSize(f, w.bufferedSize)
+	w.initWriter(f)
 	return nil
 }
 
@@ -143,6 +163,9 @@ func (w *diskWAL) removeOldest() error {
 func (w *diskWAL) removeAll() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	// Best-effort flush/close of the writer chain before removing files.
+	_ = w.w.Flush()
+	_ = w.sw.Close()
 	if err := w.fd.Close(); err != nil {
 		return err
 	}
@@ -164,8 +187,7 @@ func (w *diskWAL) refresh() error {
 	if err != nil {
 		return err
 	}
-	w.fd = f
-	w.w = bufio.NewWriterSize(f, w.bufferedSize)
+	w.initWriter(f)
 	return nil
 }
 
@@ -216,7 +238,7 @@ func (f *diskWALReader) readAll() error {
 		}
 		segment := &segment{
 			file: fd,
-			r:    bufio.NewReader(fd),
+			r:    bufio.NewReader(snappy.NewReader(fd)),
 		}
 		for segment.next() {
 			rec := segment.record()
@@ -230,7 +252,7 @@ func (f *diskWALReader) readAll() error {
 		}
 
 		err = segment.error()
-		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
+		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) || errors.Is(err, snappy.ErrCorrupt) {
 			// It is not unusual for a line to be invalid, as it may well terminate in the middle of writing to the WAL.
 			return nil
 		}

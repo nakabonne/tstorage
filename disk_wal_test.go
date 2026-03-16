@@ -51,6 +51,37 @@ func Test_diskWAL_append_read(t *testing.T) {
 	assert.Equal(t, rows, got)
 }
 
+func Test_diskWAL_snappy_compressed(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "tstorage-test")
+	defer os.RemoveAll(tmpDir)
+	require.NoError(t, err)
+	path := filepath.Join(tmpDir, "wal")
+
+	wal, err := newDiskWAL(path, 4096)
+	require.NoError(t, err)
+
+	rows := []Row{
+		{Metric: "metric-1", DataPoint: DataPoint{Value: 0.1, Timestamp: 1600000000}},
+	}
+	err = wal.append(operationInsert, rows)
+	require.NoError(t, err)
+	err = wal.flush()
+	require.NoError(t, err)
+
+	// Read the segment file and check for snappy stream magic bytes.
+	files, err := os.ReadDir(path)
+	require.NoError(t, err)
+	require.NotEmpty(t, files)
+
+	data, err := os.ReadFile(filepath.Join(path, files[0].Name()))
+	require.NoError(t, err)
+
+	// Snappy stream format magic: 0xff 0x06 0x00 0x00 s N a P p Y
+	snappyMagic := []byte{0xff, 0x06, 0x00, 0x00, 0x73, 0x4e, 0x61, 0x50, 0x70, 0x59}
+	require.True(t, len(data) >= len(snappyMagic), "segment file too small")
+	assert.Equal(t, snappyMagic, data[:len(snappyMagic)], "segment file should start with snappy stream magic bytes")
+}
+
 func Test_diskWAL_removeOldest(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "tstorage-test")
 	require.NoError(t, err)
